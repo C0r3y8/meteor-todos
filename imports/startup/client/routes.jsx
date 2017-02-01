@@ -1,9 +1,9 @@
 import React from 'react';
 
-import App from '../../ui/layouts/app';
+import AppContainer from '../../ui/containers/app-container';
 
 export default function () {
   return (
-    <App />
+    <AppContainer />
   );
 }
