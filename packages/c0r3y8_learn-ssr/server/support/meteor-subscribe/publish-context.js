@@ -1,14 +1,30 @@
+/* eslint-disable max-len */
 /**
- * This module is highly based on https://github.com/kadirahq/fast-render.
+ * We're stealing all the code from FastRender
+ * https://github.com/kadirahq/fast-render/blob/master/lib/server/publish_context.js
  */
-/* eslint-disable no-unused-vars */
-import warning from 'warning';
 /* eslint-enable */
+
+import warning from 'warning';
 import { MeteorX } from 'meteor/meteorhacks:meteorx';
 
 import MockedSession from './mocked-session';
 
-export default class Subscription extends MeteorX.Subscription {
+/* eslint-disable max-len */
+/*
+ * see https://github.com/meteor/meteor/blob/84ed04b8f3b99cf16b5540f2e0193d47e4f8ccf6/packages/ddp-server/livedata_server.js#L937 for more infos
+ */
+/* eslint-enable */
+/** @class */
+export default class PublishContext extends MeteorX.Subscription {
+  /**
+   * @constructor
+   * @param {Context} context
+   * @param {function} handler
+   * @param {string} subscriptionId
+   * @param {array} params
+   * @param {string} name
+   */
   constructor(context, handler, subscriptionId, params, name) {
     // mock session
     const session = new MockedSession(() => this, context);
@@ -19,6 +35,10 @@ export default class Subscription extends MeteorX.Subscription {
     this.unblock = () => {};
   }
 
+  /**
+   * @method error
+   * @param {Error} error
+   */
   error(error) {
     const { _name } = this;
     const message = error.message || error;
@@ -27,6 +47,9 @@ export default class Subscription extends MeteorX.Subscription {
     this.stop();
   }
 
+  /**
+   * @method stop
+   */
   stop() {
     // our stop does not remove all documents (it just calls deactivate)
     // Meteor one removes documents for non-universal subscription

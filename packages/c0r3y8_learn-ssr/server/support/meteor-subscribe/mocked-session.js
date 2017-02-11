@@ -1,5 +1,6 @@
 /**
- * This module is highly based on https://github.com/kadirahq/fast-render.
+ * We're stealing all the code from FastRender
+ * https://github.com/kadirahq/fast-render/blob/master/lib/server/publish_context.js
  */
 
 import { EJSON } from 'meteor/ejson';
@@ -8,6 +9,9 @@ import { Random } from 'meteor/random';
 
 import { jsperfForEach } from '../../../shared/utils/jsperf';
 
+/*
+ * see https://github.com/meteor/meteor/blob/84ed04b8f3b99cf16b5540f2e0193d47e4f8ccf6/packages/ddp-server/livedata_server.js#L224 for more infos
+ */
 /** @class */
 export default class MockedSession {
   /**
