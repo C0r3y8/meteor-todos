@@ -7,5 +7,6 @@ import routes from './routes';
 import './accounts-config';
 
 Meteor.startup(() => {
-  render(routes(), document.getElementById('render-target'));
+  console.log(Meteor.connection);
+  render(routes(), document.getElementById('react'));
 });
