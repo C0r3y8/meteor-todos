@@ -4,8 +4,8 @@
  * https://github.com/kadirahq/fast-render/blob/master/lib/server/publish_context.js
  */
 /* eslint-enable */
-
 import warning from 'warning';
+
 import { MeteorX } from 'meteor/meteorhacks:meteorx';
 
 import MockedSession from './mocked-session';
@@ -16,14 +16,14 @@ import MockedSession from './mocked-session';
  */
 /* eslint-enable */
 /** @class */
-export default class PublishContext extends MeteorX.Subscription {
+export default class Subscription extends MeteorX.Subscription {
   /**
    * @constructor
    * @param {Context} context
    * @param {function} handler
-   * @param {string} subscriptionId
-   * @param {array} params
-   * @param {string} name
+   * @param {string=} subscriptionId
+   * @param {array=} params
+   * @param {string=} name
    */
   constructor(context, handler, subscriptionId, params, name) {
     // mock session

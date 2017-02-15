@@ -13,6 +13,8 @@ import Provider from 'react-redux';
 import { StaticRouter } from 'react-router';
 /* eslint-enable */
 
+import { encodeData } from '../shared/utils/encode';
+
 /** @class */
 export default class ReactRouterEngine {
   /**
@@ -28,7 +30,7 @@ export default class ReactRouterEngine {
     this.App = App;
     this.options = {
       stringifyPreloadedState: state =>
-        `window.__PRELOADED_STATE__ = ${EJSON.stringify(state)};`,
+        `window.__PRELOADED_STATE__ = ${encodeData(state)};`,
       renderToString: this._renderToString,
       withIds: false,
       ...options

@@ -12,7 +12,7 @@ blaze@2.3.0
 blaze-html-templates@1.1.0
 blaze-tools@1.0.10
 boilerplate-generator@1.0.11
-c0r3y8:electrolysis@0.0.1
+c0r3y8:learn-ssr@0.0.1
 caching-compiler@1.1.9
 caching-html-compiler@1.1.0
 callback-hook@1.0.10
@@ -42,6 +42,7 @@ localstorage@1.0.12
 logging@1.1.16
 meteor@1.6.0
 meteor-base@1.0.4
+meteorhacks:meteorx@1.4.1
 minifier-css@1.2.15
 minifier-js@1.2.15
 minimongo@1.0.19

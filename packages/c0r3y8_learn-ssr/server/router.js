@@ -4,8 +4,15 @@ import UrlPattern from 'url-pattern';
 /* eslint-enable */
 
 import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
+import { Meteor } from 'meteor/meteor';
 
 import ReactRouterEngine from './react-router-engine';
+import RouterContext from './router-context';
+import Subscription from './support/meteor-subscribe/subscription';
+/* eslint-disable max-len */
+import SubscriptionContext from './support/meteor-subscribe/subscription-context';
+/* eslint-enable */
+import { encodeData } from '../shared/utils/encode';
 import {
   jsperfFind,
   jsperfForEach
@@ -19,6 +26,9 @@ const runInFiber = (fn) => {
   }
 };
 
+const stringifyPreloadedSubscriptions = data =>
+  `window.__PRELOADED_SUBSCRIPTIONS__ = ${encodeData(data)};`;
+
 /** @class */
 export default class Router {
   /**
@@ -30,6 +40,7 @@ export default class Router {
    * @param {object=} router.options
    */
   constructor({ App, engine = {}, options = {} }) {
+    this.context = new Meteor.EnvironmentVariable();
     this.engine = new ReactRouterEngine({
       App,
       options: engine
@@ -40,6 +51,7 @@ export default class Router {
       exact: [],
       pattern: []
     };
+    this.subscribing = new Meteor.EnvironmentVariable();
 
     // jsPerf
     this.middlewares.jsperfForEach = jsperfForEach;
@@ -101,6 +113,18 @@ export default class Router {
    */
   callback(req, res, next) {
     const { engine } = this;
+    const {
+      cookies,
+      headers
+    } = req;
+
+    const subContext = new SubscriptionContext(
+      cookies.meteor_login_token,
+      { headers }
+    );
+
+    const context = new RouterContext(subContext);
+
     const store = engine.createReduxStore(req, res);
 
     if (store) {
@@ -109,12 +133,18 @@ export default class Router {
       }, 'c0r3y8:electrolysis');
     }
 
-    this._applyMiddlewares(req, res, next, store);
-    this._applyRoutes(req, res, next, store);
-    this._dispatch(req, res, next, engine.render(req, store));
+    this.context.withValue(context, () => {
+      // support for universal publications
+      this._enableUniversalPublish(subContext);
+
+      // need test
+      this._applyMiddlewares(req, res, next, store);
+      this._applyRoutes(req, res, next, store);
+      this._dispatch(req, res, next, engine.render(req, store));
+    });
   }
 
-    /**
+  /**
    * @method _dispatch
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
@@ -123,6 +153,8 @@ export default class Router {
    */
   /* eslint-disable no-param-reassign */
   _dispatch(req, res, next, result) {
+    const subData = this.context.get().getData();
+
     let head = '';
     let body = '';
     let i;
@@ -142,6 +174,8 @@ export default class Router {
     if (result.prefetch) {
       body += `<script>${result.prefetch}</script>`;
     }
+
+    body += `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
 
     res.statusCode = result.status;
     switch (res.statusCode) {
@@ -171,6 +205,13 @@ export default class Router {
     }
   }
   /* eslint-enable */
+
+  /**
+   * @method getContext
+   */
+  getContext() {
+    return this.context.get();
+  }
 
   /**
    * @method middleware
@@ -203,5 +244,27 @@ export default class Router {
     } else {
       this.routes.pattern.push(route);
     }
+  }
+
+  /**
+   * @method _enableUniversalPublish
+   * @param {SubscriptionContext} subContext
+   */
+  _enableUniversalPublish(subContext) {
+    const callback = () => {
+      const handlers = Meteor.default_server.universal_publish_handlers;
+
+      if (handlers) {
+        // jsperf
+        handlers.jsperfForEach = jsperfForEach;
+
+        handlers.jsperfForEach((item) => {
+          // universal subs have subscription ID, params, and name undefined
+          const subscription = new Subscription(subContext, item);
+          subContext.dispatchSubscription(subscription);
+        });
+      }
+    };
+    runInFiber(callback);
   }
 }

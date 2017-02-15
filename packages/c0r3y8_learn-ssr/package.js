@@ -13,13 +13,14 @@ Package.describe({
 Npm.depends({
   assert: '1.4.1',
   'connect-redirection': '0.0.1',
+  'cookie-parser': '1.4.3',
   'url-pattern': '1.0.3',
   warning: '3.0.0'
 });
 
 const basePackages = {
   all: [
-    'account-base',
+    'accounts-base',
     'ecmascript',
     'ejson',
     'meteor',

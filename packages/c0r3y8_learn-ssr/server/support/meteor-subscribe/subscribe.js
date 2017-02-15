@@ -1,13 +1,22 @@
 import { Meteor } from 'meteor/meteor';
 
-const originalSubscribe = Meteor.subscribe;
-Meteor.subscribe = (name, ...params) => {
+export default function (router) {
+  const originalSubscribe = Meteor.subscribe;
+  Meteor.subscribe = (name, ...params) => {
+    const context = router.getContext();
 
-  if (originalSubscribe) {
-    originalSubscribe.apply(Meteor, arguments);
-  }
+    if (context) {
+      router.subscribing.withValue(true, () => {
+        context.addSubscription(name, params);
+      });
+    }
 
-  return {
-    ready: () => true
+    if (originalSubscribe) {
+      originalSubscribe.apply(Meteor, [ name, ...params ]);
+    }
+
+    return {
+      ready: () => true
+    };
   };
-};
+}

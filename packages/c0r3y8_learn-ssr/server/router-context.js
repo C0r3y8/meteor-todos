@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 /**
- * This module is highly based on https://github.com/thereactivestack-legacy/meteor-react-router-ssr.
+ * We're stealing all the code from FastRender
+ * https://github.com/thereactivestack-legacy/meteor-react-router-ssr/blob/master/lib/ssr_context.js
  */
 /* eslint-enable */
 
@@ -8,20 +9,20 @@ import { jsperfForEach } from '../shared/utils/jsperf';
 
 /** @class */
 export default class RouterContext {
-  constructor() {
+  constructor(context) {
     this.collections = {};
-    this.subscritpions = {};
+    this.context = context;
   }
 
-  add(name, ...params) {
-    const fastRenderContext = FastRender.frContext.get();
-    if (!fastRenderContext) {
+  addSubscription(name, ...params) {
+    const { context } = this;
+    if (!context) {
       throw new Error(
-        `Cannot add a subscription: ${name} without FastRender Context`
+        `Cannot add a subscription: ${name} without a context`
       );
     }
 
-    const result = fastRenderContext.subscribe(name, ...params);
+    const result = context.subscribe(name, ...params);
 
     const keys = Object.keys(result);
     // jsperf
@@ -61,5 +62,9 @@ export default class RouterContext {
       this.collections[ name ] = new Package.minimongo.LocalCollection();
     }
     return this.collection[ name ];
+  }
+
+  getData() {
+    return this.context.getData();
   }
 }

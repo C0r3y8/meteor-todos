@@ -16,6 +16,10 @@ Le fonctionnement est un peu différent en __SSR__. La connexion __DDP__ n’ét
 
 ### Définir `Meteor.subscribe` côté Server
 
+```javascript
+const originalSubscribe = Meteor.subscribe;
+```
+
 ## Notes diverses
 Quelques notes supplémentaires sur __Meteor__.
 
