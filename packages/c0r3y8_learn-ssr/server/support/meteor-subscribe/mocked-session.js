@@ -107,7 +107,7 @@ export default class MockedSession {
     const { subscription } = this;
 
     if (!(subscription()._collectionData[ collectionName ]
-      && self._collectionData[ collectionName ][ id ])
+      && subscription()._collectionData[ collectionName ][ id ])
     ) {
       throw new Error(`Removed nonexistent document ${id}`);
     }

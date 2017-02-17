@@ -6,7 +6,7 @@ import {
 
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 
-import App from '../../ui/layouts/app';
+import AppContainer from '../../ui/containers/app-container';
 import './register-api';
 
 const MainApp = () => (
@@ -15,7 +15,7 @@ const MainApp = () => (
       <li><Link to="/">{'Home'}</Link></li>
     </ul>
 
-    <Route exact path="/" component={App} />
+    <Route exact path="/" component={AppContainer} />
   </div>
 );
 

@@ -5,8 +5,8 @@ import {
   Link
 } from 'react-router-dom';
 
-// import AppContainer from '../../ui/containers/app-container';
-import App from '../../ui/layouts/app';
+import AppContainer from '../../ui/containers/app-container';
+// import App from '../../ui/layouts/app';
 
 export default function () {
   return (
@@ -16,7 +16,7 @@ export default function () {
           <li><Link to="/">Home</Link></li>
         </ul>
 
-        <Route exact path="/" component={App} />
+        <Route exact path="/" component={AppContainer} />
       </div>
     </Router>
   );

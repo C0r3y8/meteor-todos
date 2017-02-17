@@ -24,7 +24,7 @@ export default class SubscriptionContext {
   constructor(loginToken, otherParams) {
     this._collectionData = {};
     this._loginToken = loginToken;
-    this._subscritpions = {};
+    this._subscriptions = {};
     this._timeout = otherParams.timeout || 500;
 
     Object.assign(this, otherParams);
@@ -165,8 +165,8 @@ export default class SubscriptionContext {
    * @param {string} collectionName
    */
   _ensureCollection(collectionName) {
-    if (!this.collectionData[ collectionName ]) {
-      this.collectionData[ collectionName ] = [];
+    if (!this._collectionData[ collectionName ]) {
+      this._collectionData[ collectionName ] = [];
     }
   }
 

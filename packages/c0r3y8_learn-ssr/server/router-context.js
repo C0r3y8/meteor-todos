@@ -58,10 +58,10 @@ export default class RouterContext {
   }
 
   _getCollection(name) {
-    if (!this.collection[ name ]) {
+    if (!this.collections[ name ]) {
       this.collections[ name ] = new Package.minimongo.LocalCollection();
     }
-    return this.collection[ name ];
+    return this.collections[ name ];
   }
 
   getData() {
