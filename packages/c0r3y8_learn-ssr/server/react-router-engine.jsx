@@ -32,31 +32,38 @@ export default class ReactRouterEngine {
       stringifyPreloadedState: state =>
         `window.__PRELOADED_STATE__ = ${encodeData(state)};`,
       renderToString: this._renderToString,
+      routerOptions: options.routerOptions || {},
       withIds: false,
       ...options
     };
   }
 
   /**
+   * @summary Create redux store if `options.createReduxStore` is specified
+   * @locus Anywhere
+   * @memberof ReactRouterEngine
    * @method createReduxStore
-   * @param {http.IncomingMessage} req
-   * @param {http.ServerResponse} res
+   * @instance
    */
-  createReduxStore(req, res) {
+  createReduxStore() {
     const { options } = this;
 
     if (options.createReduxStore) {
-      return options.createReduxStore(req, res);
+      return options.createReduxStore();
     }
     return null;
   }
 
   /**
+   * @summary Render react app
+   * @locus Server
+   * @memberof ReactRouterEngine
    * @method render
+   * @instance
    * @param {http.IncomingMessage}
-   * @param {object} store
+   * @param {object=} store
    */
-  render(req, store) {
+  render(req, store = null) {
     try {
       const answer = this._renderToString(req, store);
 
@@ -74,7 +81,10 @@ export default class ReactRouterEngine {
   }
 
   /**
+   * @locus Server
+   * @memberof ReactRouterEngine
    * @method _renderToString
+   * @instance
    * @param {http.IncomingMessage}
    * @param {object} store
    */
@@ -85,13 +95,16 @@ export default class ReactRouterEngine {
     } = ReactDOMServer;
     const {
       App,
-      options: { withIds }
+      options: {
+        routerOptions,
+        withIds
+      }
     } = this;
     const context = {};
     const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
 
     const router = (
-      <StaticRouter location={req.url} context={context}>
+      <StaticRouter location={req.url} context={context} {...routerOptions}>
         <App />
       </StaticRouter>
     );

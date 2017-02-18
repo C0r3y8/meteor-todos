@@ -7,7 +7,7 @@ import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
 import { WebApp } from 'meteor/webapp';
 
 import Router from './router';
-import enableLiveDataSupport from './support/meteor-subscribe/subscribe';
+import enableLiveDataSupport from './support/pubsub/subscribe';
 
 checkNpmVersions({
   react: '15.x',
@@ -17,10 +17,13 @@ checkNpmVersions({
 }, 'c0r3y8:electrolysis');
 
 /* eslint-disable max-len */
-/* eslint-disable import/prefer-default-export, func-names, prefer-arrow-callback */
+/* eslint-disable import/prefer-default-export, func-names, no-unused-vars, prefer-arrow-callback */
 /* eslint-enable max-len */
-export const LearnSSR = (config) => {
-  const app = new Router(config);
+export default (App, clientOptions, serverOptions) => {
+  const app = new Router({
+    App,
+    options: serverOptions
+  });
 
   enableLiveDataSupport(app);
 

@@ -8,9 +8,9 @@ import { Meteor } from 'meteor/meteor';
 
 import ReactRouterEngine from './react-router-engine';
 import RouterContext from './router-context';
-import Subscription from './support/meteor-subscribe/subscription';
+import Subscription from './support/pubsub/subscription';
 /* eslint-disable max-len */
-import SubscriptionContext from './support/meteor-subscribe/subscription-context';
+import SubscriptionContext from './support/pubsub/subscription-context';
 /* eslint-enable */
 import { encodeData } from '../shared/utils/encode';
 import {
@@ -60,22 +60,26 @@ export default class Router {
   }
 
   /**
+   * @locus Server
+   * @memberof Router
    * @method _applyMiddlewares
+   * @instance
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
    * @param {function} next
    * @param {object} store
    */
   _applyMiddlewares(req, res, next, store) {
-    const self = this;
-
     this.middlewares.jsperfForEach((middleware) => {
-      runInFiber(() => middleware.call(self, req, res, next, store));
+      runInFiber(() => middleware.call(this, req, res, next, store));
     });
   }
 
   /**
+   * @locus Server
+   * @memberof Router
    * @method applyRoutes
+   * @instance
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
    * @param {function} next
@@ -89,7 +93,6 @@ export default class Router {
         pattern
       }
     } = this;
-    const self = this;
 
     let params;
     const find = route => !!(params = route.pattern.match(originalUrl));
@@ -98,7 +101,7 @@ export default class Router {
 
     if (currentRoute) {
       runInFiber(
-        () => currentRoute.callback.call(self, params, req, res, next, store)
+        () => currentRoute.callback.call(this, params, req, res, next, store)
       );
     } else {
       next();
@@ -106,7 +109,11 @@ export default class Router {
   }
 
   /**
+   * @summary Callback call in `WebApp.connectHandlers`
+   * @locus Server
+   * @memberof Router
    * @method callback
+   * @instance
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
    * @param {function} next
@@ -125,12 +132,12 @@ export default class Router {
 
     const context = new RouterContext(subContext);
 
-    const store = engine.createReduxStore(req, res);
+    const store = engine.createReduxStore();
 
     if (store) {
       checkNpmVersions({
         'react-redux': '5.x'
-      }, 'c0r3y8:electrolysis');
+      }, 'c0r3y8:learn-ssr');
     }
 
     this.context.withValue(context, () => {
@@ -145,7 +152,10 @@ export default class Router {
   }
 
   /**
+   * @locus Server
+   * @memberof Router
    * @method _dispatch
+   * @instance
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
    * @param {function} next
@@ -207,14 +217,22 @@ export default class Router {
   /* eslint-enable */
 
   /**
+   * @summary Return the router context
+   * @locus Server
+   * @memberof Router
    * @method getContext
+   * @instance
    */
   getContext() {
     return this.context.get();
   }
 
   /**
+   * @summary Adds a middleware
+   * @locus Server
+   * @memberof Router
    * @method middleware
+   * @instance
    * @param {function} callback
    */
   middleware(callback) {
@@ -222,7 +240,11 @@ export default class Router {
   }
 
   /**
+   * @summary Adds a route
+   * @locus Server
+   * @memberof Router
    * @method route
+   * @instance
    * @param {object} routeConfig
    * @param {string} routeConfig.path
    * @param {boolean=} routeConfig.exact
@@ -247,7 +269,10 @@ export default class Router {
   }
 
   /**
+   * @locus Server
+   * @memberof Router
    * @method _enableUniversalPublish
+   * @instance
    * @param {SubscriptionContext} subContext
    */
   _enableUniversalPublish(subContext) {
