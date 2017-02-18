@@ -1,6 +1,14 @@
 import { Meteor } from 'meteor/meteor';
 
 import ReactRouterEngine from './react-router-engine';
+import RouterContext from './router-context';
+
+import { decodeData } from '../shared/utils/encode';
+
+/* eslint-disable no-underscore-dangle */
+const parsePreloadedSubscriptions = () =>
+  decodeData(window.__PRELOADED_SUBSCRIPTIONS__);
+/* eslint-enable */
 
 /** @class */
 export default class Router {
@@ -13,6 +21,7 @@ export default class Router {
    * @param {object=} router.options
    */
   constructor({ App, engine = {}, options = {} }) {
+    this.context = new RouterContext();
     this.engine = new ReactRouterEngine({
       App,
       options: engine
@@ -39,13 +48,11 @@ export default class Router {
    */
   render() {
     Meteor.startup(() => {
-      const {
-        _initStore,
-        engine
-      } = this;
-      const store = _initStore();
+      const store = this._initStore();
 
-      engine.render(store);
+      this.context.init(parsePreloadedSubscriptions());
+
+      this.engine.render(store);
     });
   }
 }

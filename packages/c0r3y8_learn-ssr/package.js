@@ -46,7 +46,8 @@ Package.onUse(function (api) {
 
   api.use('tmeasday:check-npm-versions@0.3.1');
 
-  api.mainModule('index.js', [ 'client', 'server' ]);
+  api.mainModule('client/index.js', 'client');
+  api.mainModule('server/index.js', 'server');
 });
 /* eslint-enable */
 

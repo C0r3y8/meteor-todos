@@ -12,11 +12,13 @@ checkNpmVersions({
 /* eslint-disable max-len */
 /* eslint-disable import/prefer-default-export, func-names, prefer-arrow-callback */
 /* eslint-enable max-len */
-export default (App, clientOptions) => {
+export const LearnSSR = (App, clientOptions) => {
   const app = new Router({
     App,
     options: clientOptions
   });
+
+  app.render();
 
   return app;
 };

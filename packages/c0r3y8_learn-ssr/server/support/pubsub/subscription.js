@@ -36,7 +36,11 @@ export default class Subscription extends MeteorX.Subscription {
   }
 
   /**
+   * @summary Call when a error occurs in publication
+   * @locus Server
+   * @memberof Subscription
    * @method error
+   * @instance
    * @param {Error} error
    */
   error(error) {
@@ -48,7 +52,11 @@ export default class Subscription extends MeteorX.Subscription {
   }
 
   /**
+   * @summary Stops the subscription
+   * @locus Server
+   * @memberof Subscription
    * @method stop
+   * @instance
    */
   stop() {
     // our stop does not remove all documents (it just calls deactivate)

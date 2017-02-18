@@ -1,19 +1,29 @@
 /* eslint-disable max-len */
 /**
- * We're stealing all the code from FastRender
+ * We're stealing all the code meteor-react-router-ssr
  * https://github.com/thereactivestack-legacy/meteor-react-router-ssr/blob/master/lib/ssr_context.js
  */
 /* eslint-enable */
 
-import { jsperfForEach } from '../shared/utils/jsperf';
-
 /** @class */
 export default class RouterContext {
+  /**
+   * @constructor
+   * @param {SubscriptionContext} context
+   */
   constructor(context) {
-    this.collections = {};
     this.context = context;
   }
 
+  /**
+   * @summary Starts subscription on server
+   * @locus Server
+   * @memberof RouterContext
+   * @method addSubscription
+   * @instance
+   * @param {string} name
+   * @param {object} params
+   */
   addSubscription(name, ...params) {
     const { context } = this;
     if (!context) {
@@ -22,48 +32,16 @@ export default class RouterContext {
       );
     }
 
-    const result = context.subscribe(name, ...params);
-
-    const keys = Object.keys(result);
-    // jsperf
-    keys.jsperfForEach = jsperfForEach;
-
-    keys.jsperfForEach((collectionName) => {
-      const collection = this._getCollection(collectionName);
-      const collectionData = result[ collectionName ];
-      // jsperf
-      collectionData.jsperfForEach = jsperfForEach;
-
-      collectionData.jsperfForEach((data) => {
-        // jsperf
-        /* eslint-disable no-param-reassign */
-        data.jsperfForEach = jsperfForEach;
-        /* eslint-enable */
-
-        data.jsperfForEach((item) => {
-          const {
-            _id,
-            ...fields
-          } = item;
-          const doc = collection.findOne(_id);
-
-          if (doc) {
-            collection.update(_id, { $set: { ...fields } });
-          } else {
-            collection.insert(item);
-          }
-        });
-      });
-    });
+    context.subscribe(name, ...params);
   }
 
-  _getCollection(name) {
-    if (!this.collections[ name ]) {
-      this.collections[ name ] = new Package.minimongo.LocalCollection();
-    }
-    return this.collections[ name ];
-  }
-
+  /**
+   * @summary Returns subscriptions datas
+   * @locus Server
+   * @memberof RouterContext
+   * @method getData
+   * @instance
+   */
   getData() {
     return this.context.getData();
   }

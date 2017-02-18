@@ -19,7 +19,7 @@ checkNpmVersions({
 /* eslint-disable max-len */
 /* eslint-disable import/prefer-default-export, func-names, no-unused-vars, prefer-arrow-callback */
 /* eslint-enable max-len */
-export default (App, clientOptions, serverOptions) => {
+export const LearnSSR = (App, clientOptions, serverOptions) => {
   const app = new Router({
     App,
     options: serverOptions

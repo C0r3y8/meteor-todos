@@ -61,7 +61,11 @@ export default class SubscriptionContext {
   }
 
   /**
+   * @summary Call when subscription is ready
+   * @locus Server
+   * @memberof SubscriptionContext
    * @method completeSubscriptions
+   * @instance
    * @param {string} name
    * @param {object} params
    */
@@ -75,11 +79,15 @@ export default class SubscriptionContext {
   }
 
   /**
-   * @method dispatchSubscription
+   * @summary Runs subscription handler and returns data
+   * @locus Server
+   * @memberof SubscriptionContext
+   * @method performSubscription
+   * @instance
    * @param {Subscription} subscription
    */
   /* eslint-disable no-underscore-dangle */
-  dispatchSubscription(subscription) {
+  performSubscription(subscription) {
     const data = {};
     const future = new Future();
 
@@ -161,7 +169,10 @@ export default class SubscriptionContext {
   /* eslint-enable */
 
   /**
+   * @locus Server
+   * @memberof SubscriptionContext
    * @method _ensureCollection
+   * @instance
    * @param {string} collectionName
    */
   _ensureCollection(collectionName) {
@@ -171,18 +182,26 @@ export default class SubscriptionContext {
   }
 
   /**
+   * @summary Returns datas to inject in html
+   * @locus Server
+   * @memberof SubscriptionContext
    * @method getData
+   * @instance
    */
   getData() {
     return {
       collectionData: this._collectionData,
       loginToken: this._loginToken,
-      subscriptions: this._subscritpions
+      subscriptions: this._subscriptions
     };
   }
 
   /**
+   * @summary Performs the `subName` subscription
+   * @locus Server
+   * @memberof SubscriptionContext
    * @method subscribe
+   * @instance
    * @param {string} subName
    * @param {...*} params
    */
@@ -200,7 +219,7 @@ export default class SubscriptionContext {
         subName
       );
 
-      return this.dispatchSubscription(subscription);
+      return this.performSubscription(subscription);
     }
 
     warning(false, `There is no such publish handler named: ${subName}`);

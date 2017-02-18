@@ -7,7 +7,9 @@ import {
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 
 import AppContainer from '../../ui/containers/app-container';
-import './register-api';
+
+import './accounts-config';
+
 
 const MainApp = () => (
   <div>
@@ -19,11 +21,4 @@ const MainApp = () => (
   </div>
 );
 
-const ssr = LearnSSR(MainApp, {}, { engine: { withIds: true } });
-
-ssr.route({
-  exact: true,
-  path: '/'
-}, function (params, req, res, next) {
-  console.log('Hello');
-});
+LearnSSR(MainApp);

@@ -30,7 +30,7 @@ export default class ReactRouterEngine {
     this.App = App;
     this.options = {
       stringifyPreloadedState: state =>
-        `window.__PRELOADED_STATE__ = ${encodeData(state)};`,
+        `window.__PRELOADED_STATE__ = '${encodeData(state)}';`,
       renderToString: this._renderToString,
       routerOptions: options.routerOptions || {},
       withIds: false,

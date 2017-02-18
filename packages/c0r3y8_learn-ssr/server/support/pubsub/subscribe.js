@@ -1,6 +1,6 @@
 import { Meteor } from 'meteor/meteor';
 
-export default function (router) {
+export default (router) => {
   const originalSubscribe = Meteor.subscribe;
   Meteor.subscribe = (name, ...params) => {
     const context = router.getContext();
@@ -19,4 +19,4 @@ export default function (router) {
       ready: () => true
     };
   };
-}
+};

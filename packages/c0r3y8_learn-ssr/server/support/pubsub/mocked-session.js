@@ -39,14 +39,20 @@ export default class MockedSession {
     this.userId = userId;
   }
 
-  /* eslint-disable no-unused-vars, no-underscore-dangle */
+  /* eslint-disable max-len, no-unused-vars, no-underscore-dangle */
   /**
+   * @summary Call inside `Subscription.added`
+   * @description https://github.com/meteor/meteor/blob/84ed04b8f3b99cf16b5540f2e0193d47e4f8ccf6/packages/ddp-server/livedata_server.js#L1239
+   * @locus Server
+   * @memberof MockedSession
    * @method added
+   * @instance
    * @param {function} subscriptionHandle
    * @param {string} collectionName
    * @param {string} id
    * @param {object} fields
    */
+  /* eslint-enable max-len */
   added(subscriptionHandle, collectionName, id, fields) {
     const { subscription } = this;
     // Don't share state with the data passed in by the user.
@@ -60,14 +66,20 @@ export default class MockedSession {
   }
   /* eslint-enable */
 
-  /* eslint-disable no-unused-vars, no-underscore-dangle */
+  /* eslint-disable max-len, no-unused-vars, no-underscore-dangle */
   /**
+   * @summary Call inside `Subscription.changed`
+   * @description https://github.com/meteor/meteor/blob/84ed04b8f3b99cf16b5540f2e0193d47e4f8ccf6/packages/ddp-server/livedata_server.js#L1257
+   * @locus Server
+   * @memberof MockedSession
    * @method changed
+   * @instance
    * @param {function} subscriptionHandle
    * @param {string} collectionName
    * @param {string} id
    * @param {object} fields
    */
+  /* eslint-enable max-len */
   changed(subscriptionHandle, collectionName, id, fields) {
     const { subscription } = this;
     const doc = subscription()._collectionData[ collectionName ][ id ];
@@ -96,13 +108,19 @@ export default class MockedSession {
   }
   /* eslint-enable */
 
-  /* eslint-disable no-unused-vars, no-underscore-dangle */
+  /* eslint-disable max-len, no-unused-vars, no-underscore-dangle */
   /**
+   * @summary Call inside `Subscription.removed`
+   * @description https://github.com/meteor/meteor/blob/84ed04b8f3b99cf16b5540f2e0193d47e4f8ccf6/packages/ddp-server/livedata_server.js#L1273
+   * @locus Server
+   * @memberof MockedSession
    * @method removed
+   * @instance
    * @param {function} subscriptionHandle
    * @param {string} collectionName
    * @param {string} id
    */
+  /* eslint-enable max-len */
   removed(subscriptionHandle, collectionName, id) {
     const { subscription } = this;
 
@@ -115,11 +133,17 @@ export default class MockedSession {
   }
   /* eslint-enable */
 
-  /* eslint-disable no-unused-vars, no-underscore-dangle */
+  /* eslint-disable max-len, no-unused-vars, no-underscore-dangle */
   /**
+   * @summary Call inside `Subscription.ready`
+   * @description https://github.com/meteor/meteor/blob/84ed04b8f3b99cf16b5540f2e0193d47e4f8ccf6/packages/ddp-server/livedata_server.js#L1290
+   * @locus Server
+   * @memberof MockedSession
    * @method sendReady
+   * @instance
    * @param {array} subscriptionIds
    */
+  /* eslint-enable max-len */
   sendReady(subscriptionIds) {
     const { subscription } = this;
 

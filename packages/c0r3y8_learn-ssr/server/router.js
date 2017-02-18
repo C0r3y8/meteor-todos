@@ -27,7 +27,7 @@ const runInFiber = (fn) => {
 };
 
 const stringifyPreloadedSubscriptions = data =>
-  `window.__PRELOADED_SUBSCRIPTIONS__ = ${encodeData(data)};`;
+  `window.__PRELOADED_SUBSCRIPTIONS__ = '${encodeData(data)}';`;
 
 /** @class */
 export default class Router {
@@ -109,49 +109,6 @@ export default class Router {
   }
 
   /**
-   * @summary Callback call in `WebApp.connectHandlers`
-   * @locus Server
-   * @memberof Router
-   * @method callback
-   * @instance
-   * @param {http.IncomingMessage} req
-   * @param {http.ServerResponse} res
-   * @param {function} next
-   */
-  callback(req, res, next) {
-    const { engine } = this;
-    const {
-      cookies,
-      headers
-    } = req;
-
-    const subContext = new SubscriptionContext(
-      cookies.meteor_login_token,
-      { headers }
-    );
-
-    const context = new RouterContext(subContext);
-
-    const store = engine.createReduxStore();
-
-    if (store) {
-      checkNpmVersions({
-        'react-redux': '5.x'
-      }, 'c0r3y8:learn-ssr');
-    }
-
-    this.context.withValue(context, () => {
-      // support for universal publications
-      this._enableUniversalPublish(subContext);
-
-      // need test
-      this._applyMiddlewares(req, res, next, store);
-      this._applyRoutes(req, res, next, store);
-      this._dispatch(req, res, next, engine.render(req, store));
-    });
-  }
-
-  /**
    * @locus Server
    * @memberof Router
    * @method _dispatch
@@ -217,6 +174,74 @@ export default class Router {
   /* eslint-enable */
 
   /**
+   * @locus Server
+   * @memberof Router
+   * @method _enableUniversalPublish
+   * @instance
+   * @param {SubscriptionContext} subContext
+   */
+  _enableUniversalPublish(subContext) {
+    const callback = () => {
+      const handlers = Meteor.default_server.universal_publish_handlers;
+
+      if (handlers) {
+        // jsperf
+        handlers.jsperfForEach = jsperfForEach;
+
+        handlers.jsperfForEach((item) => {
+          // universal subs have subscription ID, params, and name undefined
+          const subscription = new Subscription(subContext, item);
+          subContext.performSubscription(subscription);
+        });
+      }
+    };
+    runInFiber(callback);
+  }
+
+    /**
+   * @summary Callback call in `WebApp.connectHandlers`
+   * @locus Server
+   * @memberof Router
+   * @method callback
+   * @instance
+   * @param {http.IncomingMessage} req
+   * @param {http.ServerResponse} res
+   * @param {function} next
+   */
+  callback(req, res, next) {
+    const { engine } = this;
+    const {
+      cookies,
+      headers
+    } = req;
+
+    const subContext = new SubscriptionContext(
+      cookies.meteor_login_token,
+      { headers }
+    );
+
+    const context = new RouterContext(subContext);
+
+    const store = engine.createReduxStore();
+
+    if (store) {
+      checkNpmVersions({
+        'react-redux': '5.x'
+      }, 'c0r3y8:learn-ssr');
+    }
+
+    this.context.withValue(context, () => {
+      // support for universal publications
+      this._enableUniversalPublish(subContext);
+
+      // need test
+      this._applyMiddlewares(req, res, next, store);
+      this._applyRoutes(req, res, next, store);
+      this._dispatch(req, res, next, engine.render(req, store));
+    });
+  }
+
+  /**
    * @summary Return the router context
    * @locus Server
    * @memberof Router
@@ -266,30 +291,5 @@ export default class Router {
     } else {
       this.routes.pattern.push(route);
     }
-  }
-
-  /**
-   * @locus Server
-   * @memberof Router
-   * @method _enableUniversalPublish
-   * @instance
-   * @param {SubscriptionContext} subContext
-   */
-  _enableUniversalPublish(subContext) {
-    const callback = () => {
-      const handlers = Meteor.default_server.universal_publish_handlers;
-
-      if (handlers) {
-        // jsperf
-        handlers.jsperfForEach = jsperfForEach;
-
-        handlers.jsperfForEach((item) => {
-          // universal subs have subscription ID, params, and name undefined
-          const subscription = new Subscription(subContext, item);
-          subContext.dispatchSubscription(subscription);
-        });
-      }
-    };
-    runInFiber(callback);
   }
 }

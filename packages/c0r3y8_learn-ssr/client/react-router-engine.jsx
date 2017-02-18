@@ -9,7 +9,7 @@ import React from 'react';
 import ReactDom from 'react-dom';
 /* eslint-disable import/no-unresolved */
 import Provider from 'react-redux';
-import { BrowserRouter } from 'react-router';
+import { BrowserRouter } from 'react-router-dom';
 /* eslint-enable */
 
 import { decodeData } from '../shared/utils/encode';
@@ -68,6 +68,7 @@ export default class ReactRouterEngine {
    */
   render(store = null) {
     const {
+      App,
       options: {
         Router,
         routerOptions
