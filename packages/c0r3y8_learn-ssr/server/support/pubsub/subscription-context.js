@@ -6,7 +6,7 @@ import Fiber from 'fibers';
 import Future from 'fibers/future';
 import warning from 'warning';
 
-import { Accounts } from 'meteor/accounts-base';
+import { DDP } from 'meteor/ddp';
 import { EJSON } from 'meteor/ejson';
 import { Meteor } from 'meteor/meteor';
 import { Random } from 'meteor/random';
@@ -18,33 +18,18 @@ import { jsperfForEach } from '../../../shared/utils/jsperf';
 export default class SubscriptionContext {
   /**
    * @constructor
-   * @param {string} loginToken
    * @param {object} otherParams
    */
-  constructor(loginToken, otherParams) {
+  constructor(otherParams) {
     this._collectionData = {};
-    this._loginToken = loginToken;
+    this._loginToken = null;
     this._subscriptions = {};
     this._timeout = otherParams.timeout || 500;
+    this.userId = null;
 
-    Object.assign(this, otherParams);
-
-    let hashedToken;
-    let user;
-
-    // get the user
+    // Needed to perform subscription
+    // We don't allow auth with cookie but subscription needs to `this.userId`
     if (Meteor.users) {
-      // check to make sure, we've the loginToken,
-      // otherwise a random user will fetched from the db
-      if (loginToken) {
-        /* eslint-disable no-underscore-dangle */
-        hashedToken = loginToken && Accounts._hashLoginToken(loginToken);
-        /* eslint-enable */
-        user = Meteor.users.findOne({
-          'services.resume.loginTokens.hashedToken': hashedToken
-        }, { fields: { _id: 1 } });
-      }
-
       /* eslint-disable max-len, no-underscore-dangle */
       /*
        * support for Meteor.user()
@@ -53,11 +38,9 @@ export default class SubscriptionContext {
       Fiber.current._meteor_dynamics = {};
       Fiber.current._meteor_dynamics[ DDP._CurrentInvocation.slot ] = this;
       /* eslint-enable */
-
-      if (user) {
-        this.userId = user._id;
-      }
     }
+
+    Object.assign(this, otherParams);
   }
 
   /**
@@ -75,7 +58,7 @@ export default class SubscriptionContext {
       _subscriptions[ name ] = {};
     }
 
-    _subscriptions[ EJSON.stringify(params) ] = true;
+    _subscriptions[ name ][ EJSON.stringify(params) ] = true;
   }
 
   /**
@@ -191,7 +174,6 @@ export default class SubscriptionContext {
   getData() {
     return {
       collectionData: this._collectionData,
-      loginToken: this._loginToken,
       subscriptions: this._subscriptions
     };
   }

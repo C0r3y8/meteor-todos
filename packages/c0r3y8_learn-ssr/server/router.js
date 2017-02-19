@@ -12,7 +12,7 @@ import Subscription from './support/pubsub/subscription';
 /* eslint-disable max-len */
 import SubscriptionContext from './support/pubsub/subscription-context';
 /* eslint-enable */
-import { encodeData } from '../shared/utils/encode';
+import { encodeData } from '../shared/utils/tools';
 import {
   jsperfFind,
   jsperfForEach
@@ -51,7 +51,6 @@ export default class Router {
       exact: [],
       pattern: []
     };
-    this.subscribing = new Meteor.EnvironmentVariable();
 
     // jsPerf
     this.middlewares.jsperfForEach = jsperfForEach;
@@ -210,15 +209,9 @@ export default class Router {
    */
   callback(req, res, next) {
     const { engine } = this;
-    const {
-      cookies,
-      headers
-    } = req;
+    const { headers } = req;
 
-    const subContext = new SubscriptionContext(
-      cookies.meteor_login_token,
-      { headers }
-    );
+    const subContext = new SubscriptionContext({ headers });
 
     const context = new RouterContext(subContext);
 

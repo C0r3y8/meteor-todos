@@ -3,7 +3,7 @@ import { Meteor } from 'meteor/meteor';
 import ReactRouterEngine from './react-router-engine';
 import RouterContext from './router-context';
 
-import { decodeData } from '../shared/utils/encode';
+import { decodeData } from '../shared/utils/tools';
 
 /* eslint-disable no-underscore-dangle */
 const parsePreloadedSubscriptions = () =>
@@ -37,6 +37,17 @@ export default class Router {
    */
   _initStore() {
     return this.engine.createReduxStore();
+  }
+
+  /**
+   * @summary Returns router context
+   * @locus Client
+   * @memberof Router
+   * @method getContext
+   * @instance
+   */
+  getContext() {
+    return this.context;
   }
 
   /**

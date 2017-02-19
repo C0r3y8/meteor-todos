@@ -1,6 +1,5 @@
 /* eslint-disable import/no-unresolved */
 import redirect from 'connect-redirection';
-import cookieParser from 'cookie-parser';
 /* eslint-enable */
 
 import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
@@ -28,8 +27,7 @@ export const LearnSSR = (App, clientOptions, serverOptions) => {
   enableLiveDataSupport(app);
 
   WebApp.rawConnectHandlers
-    .use(redirect())
-    .use(cookieParser());
+    .use(redirect());
 
   WebApp.connectHandlers
     .use(function (req, res, next) {

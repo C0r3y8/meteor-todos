@@ -12,7 +12,7 @@ import Provider from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 /* eslint-enable */
 
-import { decodeData } from '../shared/utils/encode';
+import { decodeData } from '../shared/utils/tools';
 
 /** @class */
 export default class ReactRouterEngine {

@@ -5,6 +5,8 @@
  */
 /* eslint-enable */
 
+import { jsperfForEach } from '../shared/utils/jsperf';
+
 /** @class */
 export default class RouterContext {
   /**
@@ -43,6 +45,39 @@ export default class RouterContext {
    * @instance
    */
   getData() {
-    return this.context.getData();
+    const contextData = this.context.getData();
+
+    const formatedData = {
+      collectionData: {},
+      subscriptions: contextData.subscriptions
+    };
+
+    const keys = Object.keys(contextData.collectionData);
+    // jsperf
+    keys.jsperfForEach = jsperfForEach;
+
+    keys.jsperfForEach((collectionName) => {
+      const collectionData = contextData.collectionData[ collectionName ];
+
+      if (!formatedData.collectionData[ collectionName ]) {
+        formatedData.collectionData[ collectionName ] = [];
+      }
+
+      // jsperf
+      collectionData.jsperfForEach = jsperfForEach;
+
+      collectionData.jsperfForEach((dataSet) => {
+        // jsperf
+        /* eslint-disable no-param-reassign */
+        dataSet.jsperfForEach = jsperfForEach;
+        /* eslint-enable */
+
+        dataSet.jsperfForEach((item) => {
+          formatedData.collectionData[ collectionName ].push(item);
+        });
+      });
+    });
+
+    return formatedData;
   }
 }

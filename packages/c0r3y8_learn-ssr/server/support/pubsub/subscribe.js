@@ -1,3 +1,10 @@
+/* eslint-disable max-len */
+/**
+ * We're stealing all the code meteor-react-router-ssr
+ * https://github.com/thereactivestack-legacy/meteor-react-router-ssr/blob/master/lib/ssr_data.js
+ */
+/* eslint-enable */
+
 import { Meteor } from 'meteor/meteor';
 
 export default (router) => {
@@ -6,9 +13,7 @@ export default (router) => {
     const context = router.getContext();
 
     if (context) {
-      router.subscribing.withValue(true, () => {
-        context.addSubscription(name, params);
-      });
+      context.addSubscription(name, params);
     }
 
     if (originalSubscribe) {
@@ -19,4 +24,8 @@ export default (router) => {
       ready: () => true
     };
   };
+
+  // This is not available in the server. But to make it work with SSR
+  // We need to have it.
+  Meteor.loggingIn = () => false;
 };

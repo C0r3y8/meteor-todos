@@ -13,7 +13,7 @@ import Provider from 'react-redux';
 import { StaticRouter } from 'react-router';
 /* eslint-enable */
 
-import { encodeData } from '../shared/utils/encode';
+import { encodeData } from '../shared/utils/tools';
 
 /** @class */
 export default class ReactRouterEngine {
