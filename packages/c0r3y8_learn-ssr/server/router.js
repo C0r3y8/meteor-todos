@@ -39,11 +39,11 @@ export default class Router {
    * @param {function=} router.engine.createReduxStore
    * @param {object=} router.options
    */
-  constructor({ App, engine = {}, options = {} }) {
+  constructor({ App, options = {} }) {
     this.context = new Meteor.EnvironmentVariable();
     this.engine = new ReactRouterEngine({
       App,
-      options: engine
+      options: options.engine
     });
     this.middlewares = [];
     this.options = options;
@@ -134,7 +134,7 @@ export default class Router {
     }
 
     if (result.html) {
-      body += `<div id="react">${result.html}</div>`;
+      body += result.html;
     }
 
     if (result.prefetch) {

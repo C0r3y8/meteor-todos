@@ -3,7 +3,7 @@ import React, { Component, PropTypes } from 'react';
 import { Meteor } from 'meteor/meteor';
 
 import Task from '../components/task';
-// import AccountsUIWrapper from '../wrappers/accounts-ui-wrapper';
+import AccountsUIWrapper from '../wrappers/accounts-ui-wrapper';
 
 export default class App extends Component {
   static defaultProps = {
@@ -122,7 +122,7 @@ export default class App extends Component {
             {'Hide Completed Tasks'}
           </label>
 
-          {/* <AccountsUIWrapper /> */}
+          <AccountsUIWrapper />
 
           {
             currentUser ? (

@@ -6,8 +6,12 @@ import RouterContext from './router-context';
 import { decodeData } from '../shared/utils/tools';
 
 /* eslint-disable no-underscore-dangle */
-const parsePreloadedSubscriptions = () =>
-  decodeData(window.__PRELOADED_SUBSCRIPTIONS__);
+const parsePreloadedSubscriptions = () => {
+  if (window.__PRELOADED_SUBSCRIPTIONS__) {
+    return decodeData(window.__PRELOADED_SUBSCRIPTIONS__);
+  }
+  return null;
+};
 /* eslint-enable */
 
 /** @class */
@@ -20,11 +24,11 @@ export default class Router {
    * @param {function=} router.engine.createReduxStore
    * @param {object=} router.options
    */
-  constructor({ App, engine = {}, options = {} }) {
+  constructor({ App, options = {} }) {
     this.context = new RouterContext();
     this.engine = new ReactRouterEngine({
       App,
-      options: engine
+      options: options.engine
     });
     this.options = options;
   }

@@ -85,6 +85,6 @@ export default class ReactRouterEngine {
       <Provider store={store}>
         {router}
       </Provider>
-    : router, document.getElementById('react'));
+    : router, document.getElementById('render-target'));
   }
 }

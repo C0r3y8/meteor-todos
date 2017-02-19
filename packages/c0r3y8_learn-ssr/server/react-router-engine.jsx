@@ -125,7 +125,7 @@ export default class ReactRouterEngine {
     }
     return {
       head,
-      html,
+      html: `<div id="render-target">${html}</div>`,
       status: 200
     };
   }
