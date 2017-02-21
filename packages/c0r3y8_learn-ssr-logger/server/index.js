@@ -4,30 +4,45 @@ import warning from 'warning';
 import winston from 'winston';
 /* eslint-enable */
 
+import defaultCodes from './codes';
+
 /** @class */
 class Logger {
   /**
    * @constructor
-   * @param {object} code
-   * @param {object=} config
-   * @param {object=} handlers
-   * @param {object} [CustomLogger=winston.Logger]
+   * @param {object} options
+   * @param {object} options.codes
+   * @param {object=} options.config
+   * @param {object=} options.handlers
+   * @param {object} [options.CustomLogger=winston.Logger]
    */
-  constructor({ codes, config = {
+  constructor({ codes = defaultCodes, config = {
     level: 'info',
     transports: [ new (winston.transports.Console)() ]
-  }, handlers = {}, CustomLogger = (winston.Logger) }) {
+  }, CustomLogger = (winston.Logger), handlers = {}, level = 'info' } = {}) {
     this.codes = codes || {};
+    this.config = config;
     this.handlers = {
       debug: this._defaultDebugHandler,
       error: this._defaultErrorHandler,
       info: this._defaultInfoHandler,
+      verbose: this._defaultVerboseHandler,
       warn: this._defaultWarnHandler,
       ...handlers
     };
-    this.logger = new (CustomLogger)(config);
-    // by default winston provide Profiling
-    // but for user that don't need winston add minimalist profiling system
+    // by default winston provides a Level system
+    // but for user that don't need winston we add a minimalist level system
+    if (winston.Logger === CustomLogger && this.config.level) {
+      this.config.level = level;
+    } else {
+      this.level = level;
+    }
+    this.levels = { error: 0, warn: 1, info: 2, verbose: 3, debug: 4 };
+
+    this.logger = new (CustomLogger)(this.config);
+
+    // by default winston provides a Profiling system
+    // but for user that don't need winston we add a minimalist profiling system
     this.profiles = {};
   }
 
@@ -46,10 +61,12 @@ class Logger {
     const template = this.codes[ code ];
 
     let length;
+    let match;
 
     warning(exist, `Logger: template for ${code} doesn't exist`);
     if (exist) {
-      length = template.match(regex).length;
+      match = template.match(regex);
+      length = (match) ? match.length : 0;
       callback.call(
         this,
         util.format(template, ...args.slice(0, length)),
@@ -97,6 +114,18 @@ class Logger {
   /**
    * @locus Server
    * @memberof Logger
+   * @method _defaultVerboseHandler
+   * @instance
+   * @param {string} message - formatted message
+   * @param {...*} args - meta parameters
+   */
+  _defaultVerboseHandler(message, ...args) {
+    this.logger.log('verbose', message, ...args);
+  }
+
+  /**
+   * @locus Server
+   * @memberof Logger
    * @method _defaultWarnHandler
    * @instance
    * @param {string} message - formatted message
@@ -104,6 +133,39 @@ class Logger {
    */
   _defaultWarnHandler(message, ...args) {
     this.logger.log('warn', message, ...args);
+  }
+
+  /**
+   * @summary Same as `log` method but type is set to `debug`
+   * @locus Server
+   * @memberof Logger
+   * @method debug
+   * @instance
+   */
+  debug(code, ...args) {
+    this.log('debug', code, ...args);
+  }
+
+  /**
+   * @summary Same as `log` but type is set to `error`
+   * @locus Server
+   * @memberof Logger
+   * @method error
+   * @instance
+   */
+  error(code, ...args) {
+    this.log('error', code, ...args);
+  }
+
+  /**
+   * @summary Same as `log` but type is set to `info`
+   * @locus Server
+   * @memberof Logger
+   * @method info
+   * @instance
+   */
+  info(code, ...args) {
+    this.log('info', code, ...args);
   }
 
   /**
@@ -118,11 +180,35 @@ class Logger {
    */
   log(type, code, ...args) {
     const exist = !!this.handlers[ type ];
+    const canLog = (this.logger instanceof winston.Logger)
+      || this.levels[ type ] <= this.levels[ this.level ];
 
     warning(exist, `Logger: ${type} is not specified in handlers`);
-    if (exist) {
+    if (exist && canLog) {
       this._applyTemplate(code, this.handlers[ type ], ...args);
     }
+  }
+
+  /**
+   * @summary Same as `log` but type is set to `verbose`
+   * @locus Server
+   * @memberof Logger
+   * @method verbose
+   * @instance
+   */
+  verbose(code, ...args) {
+    this.log('verbose', code, ...args);
+  }
+
+  /**
+   * @summary Same as `log` but type is set to `warn`
+   * @locus Server
+   * @memberof Logger
+   * @method warn
+   * @instance
+   */
+  warn(code, ...args) {
+    this.log('warn', code, ...args);
   }
 
   /**

@@ -22,20 +22,14 @@ const MainApp = () => (
 
 const ssr = LearnSSR(MainApp, {}, {
   engine: { withIds: true },
-  Logger: new Logger({
-    codes: {
-      router_does_not_find_route: 'Router: No routes matches with %s',
-      router_finds_route: 'Router: Finds route %s with params %j',
-      router_finishes: 'Router: Response %j sended',
-    }
-  }),
-  profiling: true
+  Logger: new Logger()
 });
 
+/* eslint-disable no-unused-vars */
 ssr.route({
   exact: true,
   path: '/'
-}, function (params, req, res, next) {
-  console.log('Hello');
+}, (params, req, res, next) => {
   next();
 });
+/* eslint-enable */

@@ -43,7 +43,6 @@ export default class Router {
    */
   constructor({ App, options = {} }) {
     this.context = new Meteor.EnvironmentVariable();
-    this.debug = options.debug || false;
     this.engine = new ReactRouterEngine({
       App,
       options: options.engine
@@ -51,7 +50,6 @@ export default class Router {
     this.Logger = options.Logger || null;
     this.middlewares = [];
     this.options = options;
-    this.profiling = options.debug || options.profiling || false;
     this.routes = {
       exact: [],
       pattern: []
@@ -76,12 +74,21 @@ export default class Router {
     const middleware = this.middleware[ index ];
 
     if (middleware) {
+      this._verbose('verbose_middleware_found');
+
       runInFiber(() => {
-        middleware.call(this, req, res, () =>
-          this._applyMiddlewares(req, res, next, store, index + 1)
-        , store);
+        try {
+          middleware.call(this, req, res, () =>
+            this._applyMiddlewares(req, res, next, store, index + 1)
+          , store);
+        } catch (err) {
+          this._debug('debug_middleware_callback_error', req.originalUrl, err);
+          next(err);
+        }
       });
     } else {
+      this._verbose('verbose_middleware_not_found');
+
       next();
     }
   }
@@ -112,21 +119,45 @@ export default class Router {
     const currentRoute = exact.jsperfFind(find) || pattern.jsperfFind(find);
 
     if (currentRoute) {
-      this._log(
-        'info',
-        'router_finds_route',
+      this._info(
+        'info_route_found',
         currentRoute.pattern.stringify(),
         params
       );
 
       runInFiber(
-        () => currentRoute.callback.call(this, params, req, res, next, store)
+        () => {
+          try {
+            currentRoute.callback.call(this, params, req, res, next, store);
+          } catch (err) {
+            this._debug(
+              'debug_route_callback_error',
+              currentRoute.pattern.stringify(),
+              params,
+              err
+            );
+
+            next(err);
+          }
+        }
       );
     } else {
-      this._log('info', 'router_does_not_find_route', req.originalUrl);
+      this._verbose('verbose_route_not_found', req.originalUrl);
 
       next();
     }
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _debug
+   * @instance
+   * @param {string} code
+   * @param {...*} args
+   */
+  _debug(code, ...args) {
+    this._log('debug', code, ...args);
   }
 
   /**
@@ -194,17 +225,16 @@ export default class Router {
       default:
     }
 
-    this._profile('router');
-    this._log((result.status === 500) ? 'error' : 'info', 'router_finishes', {
-      error: result.err,
-      status: result.status
-    });
-    this._log('debug', 'router_finishes', {
-      body,
-      error: result.err,
-      head,
-      status: result.status
-    });
+    const error = (result.err) ? result.err.message : '';
+    const type = (result.status === 500) ? 'error' : 'info';
+    this._log(type, `${type}_response_sended`, result.status, error);
+    this._verbose('verbose_response_sended', head, body);
+    this._debug(
+      `debug_response_sended${(result.err) ? '_error' : ''}`,
+      req.originalUrl,
+      result.status,
+      result.err
+    );
   }
   /* eslint-enable */
 
@@ -236,10 +266,35 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
+   * @method _error
+   * @instance
+   * @param {string} code
+   * @param {...*} args
+   */
+  _error(code, ...args) {
+    this._log('error', code, ...args);
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _info
+   * @instance
+   * @param {string} code
+   * @param {...*} args
+   */
+  _info(code, ...args) {
+    this._log('info', code, ...args);
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
    * @method _log
    * @instance
    * @param {string} type
    * @param {string} code
+   * @param {...*} args
    */
   _log(type, code, ...args) {
     if (this.Logger) {
@@ -250,12 +305,36 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
+   * @method _verbose
+   * @instance
+   * @param {string} code
+   * @param {...*} args
+   */
+  _verbose(code, ...args) {
+    this._log('verbose', code, ...args);
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _log
+   * @instance
+   * @param {string} code
+   * @param {...*} args
+   */
+  _warn(code, ...args) {
+    this._log('warn', code, ...args);
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
    * @method _profile
    * @instance
    * @param {string} name
    */
   _profile(name) {
-    if (this.Logger && this.profiling) {
+    if (this.Logger) {
       this.Logger.profile(name);
     }
   }
@@ -270,8 +349,10 @@ export default class Router {
    * @param {http.ServerResponse} res
    * @param {function} next
    */
-  callback(req, res, next) {
-    this._profile('router');
+  callback(req, res, out) {
+    this._info('info_received_request', req.originalUrl);
+    this._verbose('verbose_received_request', req);
+    this._profile('Responded in');
 
     const { engine } = this;
     const {
@@ -291,21 +372,28 @@ export default class Router {
       }, 'c0r3y8:learn-ssr');
     }
 
+    const next = (callback = null) =>
+      (err) => {
+        if (err) {
+          this._dispatch(req, res, out, { err, status: 500 });
+        } else if (callback) {
+          callback.call(this, req, res, next(), store);
+        } else if (isAppUrl(originalUrl)) {
+          this._dispatch(req, res, out, engine.render(req, store));
+        } else {
+          out();
+        }
+      };
+
     this.context.withValue(context, () => {
       // support for universal publications
       this._enableUniversalPublish(subContext);
 
       // need test
-      this._applyMiddlewares(req, res, () => {
-        this._applyRoutes(req, res, () => {
-          if (isAppUrl(originalUrl)) {
-            this._dispatch(req, res, next, engine.render(req, store));
-          } else {
-            next();
-          }
-        }, store);
-      }, store);
+      this._applyMiddlewares(req, res, next(this._applyRoutes), store);
     });
+
+    this._profile('Responded in');
   }
 
   /**
