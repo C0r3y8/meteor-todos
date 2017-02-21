@@ -1,6 +1,7 @@
 import Fiber from 'fibers';
 /* eslint-disable import/no-unresolved */
 import UrlPattern from 'url-pattern';
+import warning from 'warning';
 /* eslint-enable */
 
 import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
@@ -17,6 +18,7 @@ import {
   jsperfFind,
   jsperfForEach
 } from '../shared/utils/jsperf';
+import { isAppUrl } from '../shared/utils/urls';
 
 const runInFiber = (fn) => {
   if (Fiber.current) {
@@ -41,19 +43,21 @@ export default class Router {
    */
   constructor({ App, options = {} }) {
     this.context = new Meteor.EnvironmentVariable();
+    this.debug = options.debug || false;
     this.engine = new ReactRouterEngine({
       App,
       options: options.engine
     });
+    this.Logger = options.Logger || null;
     this.middlewares = [];
     this.options = options;
+    this.profiling = options.debug || options.profiling || false;
     this.routes = {
       exact: [],
       pattern: []
     };
 
     // jsPerf
-    this.middlewares.jsperfForEach = jsperfForEach;
     this.routes.exact.jsperfFind = jsperfFind;
     this.routes.pattern.jsperfFind = jsperfFind;
   }
@@ -61,17 +65,25 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
-   * @method _applyMiddlewares
+   * @method _applyNextMiddlewares
    * @instance
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
    * @param {function} next
    * @param {object} store
    */
-  _applyMiddlewares(req, res, next, store) {
-    this.middlewares.jsperfForEach((middleware) => {
-      runInFiber(() => middleware.call(this, req, res, next, store));
-    });
+  _applyMiddlewares(req, res, next, store, index = 0) {
+    const middleware = this.middleware[ index ];
+
+    if (middleware) {
+      runInFiber(() => {
+        middleware.call(this, req, res, () =>
+          this._applyMiddlewares(req, res, next, store, index + 1)
+        , store);
+      });
+    } else {
+      next();
+    }
   }
 
   /**
@@ -82,6 +94,7 @@ export default class Router {
    * @param {http.IncomingMessage} req
    * @param {http.ServerResponse} res
    * @param {function} next
+   * @param {function} out
    * @param {object} store
    */
   _applyRoutes(req, res, next, store) {
@@ -99,10 +112,19 @@ export default class Router {
     const currentRoute = exact.jsperfFind(find) || pattern.jsperfFind(find);
 
     if (currentRoute) {
+      this._log(
+        'info',
+        'router_finds_route',
+        currentRoute.pattern.stringify(),
+        params
+      );
+
       runInFiber(
         () => currentRoute.callback.call(this, params, req, res, next, store)
       );
     } else {
+      this._log('info', 'router_does_not_find_route', req.originalUrl);
+
       next();
     }
   }
@@ -123,14 +145,16 @@ export default class Router {
 
     let head = '';
     let body = '';
-    let i;
     let keys;
 
     if (result.head) {
       keys = Object.keys(result.head);
-      for (i = 0; i < keys.length; i++) {
-        head += result.head[ keys[ i ] ].toString();
-      }
+      // jsperf
+      keys.jsperfForEach = jsperfForEach;
+
+      keys.jsperfForEach((i) => {
+        head += result.head[ i ].toString();
+      });
     }
 
     if (result.html) {
@@ -169,6 +193,18 @@ export default class Router {
 
       default:
     }
+
+    this._profile('router');
+    this._log((result.status === 500) ? 'error' : 'info', 'router_finishes', {
+      error: result.err,
+      status: result.status
+    });
+    this._log('debug', 'router_finishes', {
+      body,
+      error: result.err,
+      head,
+      status: result.status
+    });
   }
   /* eslint-enable */
 
@@ -197,6 +233,33 @@ export default class Router {
     runInFiber(callback);
   }
 
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _log
+   * @instance
+   * @param {string} type
+   * @param {string} code
+   */
+  _log(type, code, ...args) {
+    if (this.Logger) {
+      this.Logger.log(type, code, ...args);
+    }
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _profile
+   * @instance
+   * @param {string} name
+   */
+  _profile(name) {
+    if (this.Logger && this.profiling) {
+      this.Logger.profile(name);
+    }
+  }
+
     /**
    * @summary Callback call in `WebApp.connectHandlers`
    * @locus Server
@@ -208,8 +271,13 @@ export default class Router {
    * @param {function} next
    */
   callback(req, res, next) {
+    this._profile('router');
+
     const { engine } = this;
-    const { headers } = req;
+    const {
+      headers,
+      originalUrl
+    } = req;
 
     const subContext = new SubscriptionContext({ headers });
 
@@ -228,9 +296,15 @@ export default class Router {
       this._enableUniversalPublish(subContext);
 
       // need test
-      this._applyMiddlewares(req, res, next, store);
-      this._applyRoutes(req, res, next, store);
-      this._dispatch(req, res, next, engine.render(req, store));
+      this._applyMiddlewares(req, res, () => {
+        this._applyRoutes(req, res, () => {
+          if (isAppUrl(originalUrl)) {
+            this._dispatch(req, res, next, engine.render(req, store));
+          } else {
+            next();
+          }
+        }, store);
+      }, store);
     });
   }
 
@@ -279,6 +353,7 @@ export default class Router {
       pattern
     };
 
+    warning(isAppUrl(path), `Router: ${path} is not an app url`);
     if (exact) {
       this.routes.exact.push(route);
     } else {
