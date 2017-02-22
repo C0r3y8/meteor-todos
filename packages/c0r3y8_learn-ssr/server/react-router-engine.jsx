@@ -95,16 +95,13 @@ export default class ReactRouterEngine {
     } = ReactDOMServer;
     const {
       App,
-      options: {
-        routerOptions,
-        withIds
-      }
+      options: { withIds }
     } = this;
     const context = {};
     const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
 
     const router = (
-      <StaticRouter location={req.url} context={context} {...routerOptions}>
+      <StaticRouter location={req.url} context={context}>
         <App />
       </StaticRouter>
     );
@@ -126,7 +123,7 @@ export default class ReactRouterEngine {
     return {
       head,
       html: `<div id="render-target">${html}</div>`,
-      status: 200
+      status: (context.notFound) ? 404 : 200
     };
   }
 }

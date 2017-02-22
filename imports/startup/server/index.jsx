@@ -1,13 +1,16 @@
 import React from 'react';
 import {
+  Link,
   Route,
-  Link
+  Switch
 } from 'react-router-dom';
 
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 import { Logger } from 'meteor/c0r3y8:learn-ssr-logger';
 
 import AppContainer from '../../ui/containers/app-container';
+import NotFound from '../../ui/pages/not-found';
+
 import './register-api';
 
 const MainApp = () => (
@@ -16,7 +19,10 @@ const MainApp = () => (
       <li><Link to="/">{'Home'}</Link></li>
     </ul>
 
-    <Route exact path="/" component={AppContainer} />
+    <Switch>
+      <Route exact path="/" component={AppContainer} />
+      <Route component={NotFound} />
+    </Switch>
   </div>
 );
 
