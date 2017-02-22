@@ -41,10 +41,23 @@ app.route({
 }, (params, req, res, next) => { next(); });
 /* eslint-enable */
 
-const driver = new webdriver.Builder().forBrowser('chrome').build();
-chai.use(chaiWebdriver(driver));
 /* eslint-disable func-names, no-unused-vars, prefer-arrow-callback */
 describe('SSR', function () {
+  let driver;
+
+  /* eslint-disable no-undef*/
+  after(function () {
+    driver.close();
+    driver.quit();
+    driver = null;
+  });
+
+  before(function () {
+    driver = new webdriver.Builder().forBrowser('chrome').build();
+    chai.use(chaiWebdriver(driver));
+  });
+  /* eslint-enable */
+
   describe('render static page', function () {
     it('body should contain \'Hello, John Doe\'', function (done) {
       return driver.get(Meteor.absoluteUrl())
