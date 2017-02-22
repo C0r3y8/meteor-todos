@@ -10,13 +10,6 @@ Package.describe({
   documentation: 'README.md'
 });
 
-Npm.depends({
-  assert: '1.4.1',
-  'connect-redirection': '0.0.1',
-  'url-pattern': '1.0.3',
-  warning: '3.0.0'
-});
-
 const basePackages = {
   all: [
     'accounts-base',
@@ -46,6 +39,13 @@ const testPackages = [
 Package.onUse(function (api) {
   api.versionsFrom('1.4.2.3');
 
+  Npm.depends({
+    assert: '1.4.1',
+    'connect-redirection': '0.0.1',
+    'url-pattern': '1.0.3',
+    warning: '3.0.0'
+  });
+
   api.use(basePackages.all);
   api.use(basePackages.server, 'server');
 
@@ -58,6 +58,14 @@ Package.onUse(function (api) {
 
 /* eslint-disable func-names, prefer-arrow-callback */
 Package.onTest(function (api) {
+  Npm.depends({
+    assert: '1.4.1',
+    'chai-webdriver': '1.2.0',
+    'connect-redirection': '0.0.1',
+    'selenium-webdriver': '2.53.3',
+    'url-pattern': '1.0.3',
+    warning: '3.0.0'
+  });
   api.use(basePackages.all);
   api.use(basePackages.server, 'server');
 
@@ -65,6 +73,6 @@ Package.onTest(function (api) {
 
   api.use('c0r3y8:learn-ssr');
 
-  api.addFiles('server/router-tests.js', 'server');
+  api.addFiles('server/router-tests.jsx', 'server');
 });
 /* eslint-enable */
