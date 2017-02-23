@@ -121,7 +121,7 @@ export default class Router {
     if (currentRoute) {
       this._info(
         'info_route_found',
-        currentRoute.pattern.stringify(),
+        currentRoute.path,
         params
       );
 
@@ -132,7 +132,7 @@ export default class Router {
           } catch (err) {
             this._debug(
               'debug_route_callback_error',
-              currentRoute.pattern.stringify(),
+              currentRoute.path,
               params,
               err
             );
@@ -438,6 +438,7 @@ export default class Router {
 
     const route = {
       callback,
+      path,
       pattern
     };
 

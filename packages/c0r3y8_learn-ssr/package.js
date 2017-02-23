@@ -29,10 +29,11 @@ const basePackages = {
 };
 
 const testPackages = [
+  'http',
   'practicalmeteor:mocha',
   'practicalmeteor:mocha-console-runner',
   'practicalmeteor:chai',
-  'http'
+  'practicalmeteor:sinon',
 ];
 
 /* eslint-disable func-names, prefer-arrow-callback */
@@ -60,7 +61,7 @@ Package.onUse(function (api) {
 Package.onTest(function (api) {
   Npm.depends({
     assert: '1.4.1',
-    'chai-webdriver': '1.2.0',
+    'chai-webdriver-promised': '4.0.3',
     'connect-redirection': '0.0.1',
     'selenium-webdriver': '2.53.3',
     'url-pattern': '1.0.3',
