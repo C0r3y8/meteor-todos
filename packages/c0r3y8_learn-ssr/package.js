@@ -34,6 +34,7 @@ const testPackages = [
   'practicalmeteor:mocha-console-runner',
   'practicalmeteor:chai',
   'practicalmeteor:sinon',
+  'react-meteor-data'
 ];
 
 /* eslint-disable func-names, prefer-arrow-callback */
@@ -63,6 +64,7 @@ Package.onTest(function (api) {
     assert: '1.4.1',
     'chai-webdriver-promised': '4.0.3',
     'connect-redirection': '0.0.1',
+    faker: '4.1.0',
     'selenium-webdriver': '2.53.3',
     'url-pattern': '1.0.3',
     warning: '3.0.0'

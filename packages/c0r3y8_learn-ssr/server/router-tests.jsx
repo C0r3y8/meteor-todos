@@ -1,5 +1,6 @@
 /* eslint-disable import/no-unresolved */
 import chaiWebdriver from 'chai-webdriver-promised';
+import faker from 'faker';
 import React, { PropTypes } from 'react';
 import {
   Link,
@@ -14,6 +15,18 @@ import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 import { Meteor } from 'meteor/meteor';
 import { chai, expect } from 'meteor/practicalmeteor:chai';
 import { sinon } from 'meteor/practicalmeteor:sinon';
+import { createContainer } from 'meteor/react-meteor-data';
+
+const TasksCollection = new Meteor.Collection('tasks');
+TasksCollection.insert({
+  createdAt: new Date(),
+  text: faker.lorem.sentence()
+});
+/* eslint-disable prefer-arrow-callback */
+Meteor.publish('tasks', function tasksPublication() {
+  return TasksCollection.find({}, { sort: { createdAt: -1 } });
+});
+/* eslint-enable */
 
 function Welcome({ match }) {
   const name = match.params.name || 'John Doe';
@@ -27,6 +40,32 @@ Welcome.propTypes = {
     }).isRequired
   }).isRequired
 };
+
+function Task({ text }) {
+  return <li className="tasks-item">{text}</li>;
+}
+
+Task.propTypes = {
+  text: PropTypes.string.isRequired
+};
+
+function Tasks(props) {
+  const renderTasks = tasks =>
+    tasks.map(({ _id, text }) => <Task key={_id} text={text} />);
+
+  return <ul className="tasks">{renderTasks(props.tasks)}</ul>;
+}
+
+Tasks.propTypes = {
+  tasks: PropTypes.array.isRequired
+};
+
+const TasksContainer = createContainer(() => {
+  Meteor.subscribe('tasks');
+  return {
+    tasks: TasksCollection.find({}, { sort: { createdAt: -1 } }).fetch()
+  };
+}, Tasks);
 
 /* eslint-disable no-param-reassign, no-unused-vars */
 function NotFound(props, { router }) {
@@ -50,6 +89,7 @@ const MainApp = () => (
     <Switch>
       <Route exact path="/" component={Welcome} />
       <Route path="/hello/:name" component={Welcome} />
+      <Route exact path="/tasks" component={TasksContainer} />
       <Route component={NotFound} />
     </Switch>
   </div>
@@ -68,8 +108,8 @@ const driver = new webdriver.Builder().forBrowser('chrome').build();
 chai.use(chaiWebdriver(driver, 15000));
 /* eslint-disable func-names, no-undef, no-unused-vars, prefer-arrow-callback */
 describe('RouterSSR:', function () {
-  describe('send request on valid route', function () {
-    it('should responded with status 200', function () {
+  describe('Send request on a valid route', function () {
+    it('should respond with status 200', function () {
       const res = HTTP.get(Meteor.absoluteUrl());
       expect(res.statusCode).to.equal(200);
     });
@@ -79,12 +119,8 @@ describe('RouterSSR:', function () {
         driver.get(Meteor.absoluteUrl()).then(done);
       });
 
-      it('h1 should contain \'Hello, John Doe\'', function () {
+      it('should contain \'Hello, John Doe\' in h1', function () {
         expect('h1').dom.to.contain.text('Hello, John Doe');
-      });
-
-      it('h1 should not contain \'Hello, Foo Bar\'', function () {
-        expect('h1').dom.not.to.contain.text('Hello, Foor Bar');
       });
     });
 
@@ -95,19 +131,33 @@ describe('RouterSSR:', function () {
         driver.get(url).then(done);
       });
 
-      it('should passed \'John-Smith\' as param', function () {
-        const callback = (params, req, res, next) => { next(); };
-        const spy = sinon.spy(callback);
+      it('should call route middleware with { name: \'John-Smith\' }',
+        function () {
+          const callback = (params, req, res, next) => { next(); };
+          const spy = sinon.spy(callback);
 
-        app.route({ path: '/hello/:name' }, spy);
+          app.route({ path: '/hello/:name' }, spy);
 
-        const res = HTTP.get(url);
-        assert(spy.calledOnce, 'route middleware must be called only once');
-        expect(spy.getCall(0).args[ 0 ].name).to.equal('John-Smith');
+          HTTP.get(url);
+          assert(spy.calledOnce, 'route middleware must be called once');
+          expect(spy.getCall(0).args[ 0 ].name).to.equal('John-Smith');
+        }
+      );
+
+      it('should contain \'Hello, John Smith\' in h1', function () {
+        expect('h1').dom.to.contain.text('Hello, John Smith');
+      });
+    });
+
+    describe('with subscriptions', function () {
+      const url = Meteor.absoluteUrl('tasks');
+
+      before(function (done) {
+        driver.get(url).then(done);
       });
 
-      it('h1 should contain \'Hello, John Smith\'', function () {
-        expect('h1').dom.to.contain.text('Hello, John Smith');
+      it('should have task in first HTML payload', function () {
+        expect('.tasks-item').dom.to.have.count(1);
       });
     });
   });

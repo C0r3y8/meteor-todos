@@ -172,7 +172,7 @@ export default class Router {
    */
   /* eslint-disable no-param-reassign */
   _dispatch(req, res, next, result) {
-    const subData = this.context.get().getData();
+    const subData = this.getContext().getData();
 
     let head = '';
     let body = '';
