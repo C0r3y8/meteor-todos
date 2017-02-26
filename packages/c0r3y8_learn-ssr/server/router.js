@@ -1,10 +1,10 @@
+import assert from 'assert';
 import Fiber from 'fibers';
 /* eslint-disable import/no-unresolved */
 import UrlPattern from 'url-pattern';
 import warning from 'warning';
 /* eslint-enable */
 
-import { checkNpmVersions } from 'meteor/tmeasday:check-npm-versions';
 import { Meteor } from 'meteor/meteor';
 
 import ReactRouterEngine from './react-router-engine';
@@ -37,11 +37,12 @@ export default class Router {
    * @constructs
    * @param {object} router
    * @param {ReactElement} router.App
-   * @param {object=} router.engine
-   * @param {function=} router.engine.createReduxStore
    * @param {object=} router.options
+   * @param {object=} router.options.engine
    */
   constructor({ App, options = {} }) {
+    assert(App, 'You must provide an app to render.');
+
     this.context = new Meteor.EnvironmentVariable();
     this.engine = new ReactRouterEngine({
       App,
@@ -60,17 +61,17 @@ export default class Router {
     this.routes.pattern.jsperfFind = jsperfFind;
   }
 
+  /* eslint-disable no-param-reassign */
   /**
    * @locus Server
    * @memberof Router
-   * @method _applyNextMiddlewares
+   * @method _applyMiddlewares
    * @instance
-   * @param {http.IncomingMessage} req
-   * @param {http.ServerResponse} res
-   * @param {function} next
-   * @param {object} store
+   * @param {object} context
    */
-  _applyMiddlewares(req, res, next, store, index = 0) {
+  _applyMiddlewares(context, index = 0) {
+    const { req, res } = context;
+    const originalNext = context.next;
     const middleware = this.middleware[ index ];
 
     if (middleware) {
@@ -78,33 +79,34 @@ export default class Router {
 
       runInFiber(() => {
         try {
-          middleware.call(this, req, res, () =>
-            this._applyMiddlewares(req, res, next, store, index + 1)
-          , store);
+          context.next = () => {
+            context.next = originalNext;
+            this._applyMiddlewares(context, index + 1);
+          };
+          middleware.call(context, req, res, context.next);
         } catch (err) {
           this._debug('debug_middleware_callback_error', req.originalUrl, err);
-          next(err);
+          originalNext(err);
         }
       });
     } else {
       this._verbose('verbose_middleware_not_found');
 
-      next();
+      originalNext();
     }
   }
+  /* eslint-enable */
 
+  /* eslint-disable no-param-reassign */
   /**
    * @locus Server
    * @memberof Router
-   * @method applyRoutes
+   * @method _applyRoutes
    * @instance
-   * @param {http.IncomingMessage} req
-   * @param {http.ServerResponse} res
-   * @param {function} next
-   * @param {function} out
-   * @param {object} store
+   * @param {object} context
    */
-  _applyRoutes(req, res, next, store) {
+  _applyRoutes(context) {
+    const { next, req, res } = context;
     const { originalUrl } = req;
     const {
       routes: {
@@ -128,7 +130,8 @@ export default class Router {
       runInFiber(
         () => {
           try {
-            currentRoute.callback.call(this, params, req, res, next, store);
+            context.params = params;
+            currentRoute.callback.call(context, req, res, next);
           } catch (err) {
             this._debug(
               'debug_route_callback_error',
@@ -147,6 +150,7 @@ export default class Router {
       next();
     }
   }
+  /* eslint-enable */
 
   /**
    * @locus Server
@@ -160,6 +164,7 @@ export default class Router {
     this._log('debug', code, ...args);
   }
 
+  /* eslint-disable no-param-reassign */
   /**
    * @locus Server
    * @memberof Router
@@ -170,7 +175,6 @@ export default class Router {
    * @param {function} next
    * @param {object} result
    */
-  /* eslint-disable no-param-reassign */
   _dispatch(req, res, next, result) {
     const subData = this.getContext().getData();
 
@@ -305,6 +309,19 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
+   * @method _profile
+   * @instance
+   * @param {string} name
+   */
+  _profile(name) {
+    if (this.Logger) {
+      this.Logger.profile(name);
+    }
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
    * @method _verbose
    * @instance
    * @param {string} code
@@ -324,19 +341,6 @@ export default class Router {
    */
   _warn(code, ...args) {
     this._log('warn', code, ...args);
-  }
-
-  /**
-   * @locus Server
-   * @memberof Router
-   * @method _profile
-   * @instance
-   * @param {string} name
-   */
-  _profile(name) {
-    if (this.Logger) {
-      this.Logger.profile(name);
-    }
   }
 
     /**
@@ -361,25 +365,19 @@ export default class Router {
     } = req;
 
     const subContext = new SubscriptionContext({ headers });
-
     const context = new RouterContext(subContext);
 
-    const store = engine.createReduxStore();
-
-    if (store) {
-      checkNpmVersions({
-        'react-redux': '5.x'
-      }, 'c0r3y8:learn-ssr');
-    }
+    const middlewareContext = { req, res };
 
     const next = (callback = null) =>
       (err) => {
         if (err) {
           this._dispatch(req, res, out, { err, status: 500 });
         } else if (callback) {
-          callback.call(this, req, res, next(), store);
+          middlewareContext.next = next();
+          callback.call(this, middlewareContext);
         } else if (isAppUrl(originalUrl)) {
-          this._dispatch(req, res, out, engine.render(req, store));
+          this._dispatch(req, res, out, engine.render(middlewareContext));
         } else {
           out();
         }
@@ -390,7 +388,8 @@ export default class Router {
       this._enableUniversalPublish(subContext);
 
       // need test
-      this._applyMiddlewares(req, res, next(this._applyRoutes), store);
+      middlewareContext.next = next(this._applyRoutes);
+      this._applyMiddlewares(middlewareContext);
     });
 
     this._profile('Responded in');
@@ -428,7 +427,7 @@ export default class Router {
    * @param {object} routeConfig
    * @param {string} routeConfig.path
    * @param {boolean=} routeConfig.exact
-   * @param {function} callback - callback(params, req, res, next, store)
+   * @param {function} callback - callback(params, req, res, next)
    */
   route({
     exact = false,

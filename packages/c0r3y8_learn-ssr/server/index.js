@@ -11,7 +11,6 @@ import enableLiveDataSupport from './support/pubsub/subscribe';
 checkNpmVersions({
   react: '15.x',
   'react-dom': '15.x',
-  'react-helmet': '4.x',
   'react-router-dom': '4.0.0-beta.6',
 }, 'c0r3y8:learn-ssr');
 

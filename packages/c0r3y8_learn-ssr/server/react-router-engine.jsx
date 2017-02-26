@@ -8,8 +8,6 @@ import assert from 'assert';
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 /* eslint-disable import/no-unresolved */
-import Helmet from 'react-helmet';
-import Provider from 'react-redux';
 import { StaticRouter } from 'react-router';
 /* eslint-enable */
 
@@ -21,37 +19,21 @@ export default class ReactRouterEngine {
    * @constructs
    * @param {object} engine
    * @param {ReactElement} engine.App
-   * @param {object=} engine.options
-   * @param {function=} engine.options.createReduxStore
+   * @param {object} [engine.options={}]
+   * @param {function} [engine.options.renderToString=this._renderToString]
+   * @param {boolean} [engine.options.withIds=false]
    */
   constructor({ App, options = {} }) {
-    assert(App, 'You must an app to render.');
+    assert(App, 'You must provide an app to render.');
 
     this.App = App;
     this.options = {
       stringifyPreloadedState: state =>
         `window.__PRELOADED_STATE__ = '${encodeData(state)}';`,
       renderToString: this._renderToString,
-      routerOptions: options.routerOptions || {},
       withIds: false,
       ...options
     };
-  }
-
-  /**
-   * @summary Create redux store if `options.createReduxStore` is specified
-   * @locus Anywhere
-   * @memberof ReactRouterEngine
-   * @method createReduxStore
-   * @instance
-   */
-  createReduxStore() {
-    const { options } = this;
-
-    if (options.createReduxStore) {
-      return options.createReduxStore();
-    }
-    return null;
   }
 
   /**
@@ -60,17 +42,11 @@ export default class ReactRouterEngine {
    * @memberof ReactRouterEngine
    * @method render
    * @instance
-   * @param {http.IncomingMessage}
-   * @param {object=} store
+   * @param {object} middlewareContext
    */
-  render(req, store = null) {
+  render(middlewareContext) {
     try {
-      const answer = this._renderToString(req, store);
-
-      return (store) ? {
-        prefetch: this.stringifyPreloadedState(store.getState()),
-        ...answer
-      } : answer;
+      return this._renderToString(middlewareContext);
     } catch (err) {
       return {
         err,
@@ -85,10 +61,9 @@ export default class ReactRouterEngine {
    * @memberof ReactRouterEngine
    * @method _renderToString
    * @instance
-   * @param {http.IncomingMessage}
-   * @param {object} store
+   * @param {object} middlewareContext
    */
-  _renderToString(req, store) {
+  _renderToString(middlewareContext) {
     const {
       renderToStaticMarkup,
       renderToString
@@ -101,18 +76,12 @@ export default class ReactRouterEngine {
     const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
 
     const router = (
-      <StaticRouter location={req.url} context={context}>
+      <StaticRouter location={middlewareContext.req.url} context={context}>
         <App />
       </StaticRouter>
     );
 
-    const html = renderMethod((store) ?
-      <Provider store={store}>
-        {router}
-      </Provider>
-    : router);
-
-    const head = Helmet.rewind();
+    const html = renderMethod(router);
 
     if (context.url) {
       return {
@@ -121,7 +90,6 @@ export default class ReactRouterEngine {
       };
     }
     return {
-      head,
       html: `<div id="render-target">${html}</div>`,
       status: (context.notFound) ? 404 : 200
     };

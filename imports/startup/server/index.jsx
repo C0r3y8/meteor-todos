@@ -35,7 +35,7 @@ const ssr = LearnSSR(MainApp, {}, {
 ssr.route({
   exact: true,
   path: '/'
-}, (params, req, res, next) => {
+}, (req, res, next) => {
   next();
 });
 /* eslint-enable */

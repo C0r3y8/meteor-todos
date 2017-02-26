@@ -101,7 +101,7 @@ const app = new LearnSSR(MainApp, {}, { engine: { withIds: true } });
 app.route({
   exact: true,
   path: '/'
-}, (params, req, res, next) => { next(); });
+}, (req, res, next) => { next(); });
 /* eslint-enable */
 
 const driver = new webdriver.Builder().forBrowser('chrome').build();
@@ -133,14 +133,14 @@ describe('RouterSSR:', function () {
 
       it('should call route middleware with { name: \'John-Smith\' }',
         function () {
-          const callback = (params, req, res, next) => { next(); };
+          const callback = (req, res, next) => { next(); };
           const spy = sinon.spy(callback);
 
           app.route({ path: '/hello/:name' }, spy);
 
           HTTP.get(url);
           assert(spy.calledOnce, 'route middleware must be called once');
-          expect(spy.getCall(0).args[ 0 ].name).to.equal('John-Smith');
+          expect(spy.thisValues[ 0 ].params.name).to.equal('John-Smith');
         }
       );
 
