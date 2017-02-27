@@ -69,7 +69,7 @@ export default class Router {
   _applyMiddlewares(context, index = 0) {
     const { req, res } = context;
     const originalNext = context.next;
-    const middleware = this.middleware[ index ];
+    const middleware = this.middlewares[ index ];
 
     if (middleware) {
       this._verbose('verbose_middleware_found');
@@ -356,7 +356,7 @@ export default class Router {
     const subContext = new SubscriptionContext({ headers });
     const context = new RouterContext(subContext);
 
-    const middlewareContext = { req, res };
+    const middlewareContext = { out, req, res };
 
     const next = (callback = null) =>
       (err) => {

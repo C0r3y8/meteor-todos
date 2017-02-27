@@ -11,8 +11,6 @@ import ReactDOMServer from 'react-dom/server';
 import { StaticRouter } from 'react-router';
 /* eslint-enable */
 
-import { encodeData } from '../shared/utils/tools';
-
 /** @class */
 export default class ReactRouterEngine {
   /**
@@ -28,8 +26,6 @@ export default class ReactRouterEngine {
 
     this.App = App;
     this.options = {
-      stringifyPreloadedState: state =>
-        `window.__PRELOADED_STATE__ = '${encodeData(state)}';`,
       renderToString: this._renderToString,
       withIds: false,
       ...options
@@ -45,12 +41,40 @@ export default class ReactRouterEngine {
    * @param {object} middlewareContext
    */
   render(middlewareContext) {
+    const {
+      renderToStaticMarkup,
+      renderToString
+    } = ReactDOMServer;
+    const {
+      App,
+      options: { withIds }
+    } = this;
+    const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
+    const context = {};
+
+    let result;
     try {
-      return this._renderToString(middlewareContext);
+      result = this.options.renderToString({
+        App,
+        middlewareContext,
+        renderMethod,
+        routerContext: context
+      });
+
+      if (context.url) {
+        return {
+          status: 302,
+          url: context.url
+        };
+      }
+      return {
+        head: result.head,
+        html: `<div id="render-target">${result.html}</div>`,
+        status: (context.notFound) ? 404 : 200
+      };
     } catch (err) {
       return {
         err,
-        message: err.message,
         status: 500
       };
     }
@@ -62,36 +86,18 @@ export default class ReactRouterEngine {
    * @method _renderToString
    * @instance
    * @param {object} middlewareContext
+   * @param {function} renderMethod
    */
-  _renderToString(middlewareContext) {
-    const {
-      renderToStaticMarkup,
-      renderToString
-    } = ReactDOMServer;
-    const {
-      App,
-      options: { withIds }
-    } = this;
-    const context = {};
-    const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
-
+  _renderToString({ App, middlewareContext, renderMethod, routerContext }) {
+    const { req } = middlewareContext;
     const router = (
-      <StaticRouter location={middlewareContext.req.url} context={context}>
+      <StaticRouter location={req.url} context={routerContext}>
         <App />
       </StaticRouter>
     );
 
-    const html = renderMethod(router);
-
-    if (context.url) {
-      return {
-        status: 302,
-        url: context.url
-      };
-    }
     return {
-      html: `<div id="render-target">${html}</div>`,
-      status: (context.notFound) ? 404 : 200
+      html: renderMethod(router)
     };
   }
 }

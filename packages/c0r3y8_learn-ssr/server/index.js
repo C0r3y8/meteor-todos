@@ -8,6 +8,17 @@ import { WebApp } from 'meteor/webapp';
 import Router from './router';
 import enableLiveDataSupport from './support/pubsub/subscribe';
 
+import {
+  jsperfFilter,
+  jsperfFind,
+  jsperfForEach
+} from '../shared/utils/jsperf';
+import {
+  decodeData,
+  encodeData
+} from '../shared/utils/tools';
+import { isAppUrl } from '../shared/utils/urls';
+
 checkNpmVersions({
   react: '15.x',
   'react-dom': '15.x',
@@ -17,7 +28,7 @@ checkNpmVersions({
 /* eslint-disable max-len */
 /* eslint-disable import/prefer-default-export, func-names, no-unused-vars, prefer-arrow-callback */
 /* eslint-enable max-len */
-export const LearnSSR = (App, clientOptions, serverOptions) => {
+const LearnSSR = (App, clientOptions, serverOptions) => {
   const app = new Router({
     App,
     options: serverOptions
@@ -34,5 +45,15 @@ export const LearnSSR = (App, clientOptions, serverOptions) => {
     });
 
   return app;
+};
+
+export {
+  decodeData,
+  encodeData,
+  isAppUrl,
+  jsperfFilter,
+  jsperfFind,
+  jsperfForEach,
+  LearnSSR
 };
 /* eslint-enable */
