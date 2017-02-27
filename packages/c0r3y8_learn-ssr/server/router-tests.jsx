@@ -95,7 +95,7 @@ const MainApp = () => (
   </div>
 );
 
-const app = new LearnSSR(MainApp, {}, { engine: { withIds: true } });
+const app = new LearnSSR(MainApp, {}, { engineOptions: { withIds: true } });
 
 /* eslint-disable no-unused-vars */
 app.route({

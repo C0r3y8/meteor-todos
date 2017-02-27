@@ -44,7 +44,7 @@ Package.onUse(function (api) {
   Npm.depends({
     assert: '1.4.1',
     'connect-redirection': '0.0.1',
-    'url-pattern': '1.0.3',
+    'path-to-regexp': '1.7.0',
     warning: '3.0.0'
   });
 
@@ -66,7 +66,7 @@ Package.onTest(function (api) {
     'connect-redirection': '0.0.1',
     faker: '4.1.0',
     'selenium-webdriver': '2.53.3',
-    'url-pattern': '1.0.3',
+    'path-to-regexp': '1.7.0',
     warning: '3.0.0'
   });
   api.use(basePackages.all);

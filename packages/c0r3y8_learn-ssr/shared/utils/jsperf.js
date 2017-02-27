@@ -47,6 +47,6 @@ export function jsperfForEach(fn) {
   let i;
 
   for (i = 0; i < len; i++) {
-    fn(arr[ i ]);
+    fn(arr[ i ], i);
   }
 }

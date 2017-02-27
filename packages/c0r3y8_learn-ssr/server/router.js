@@ -1,7 +1,7 @@
 import assert from 'assert';
 import Fiber from 'fibers';
 /* eslint-disable import/no-unresolved */
-import UrlPattern from 'url-pattern';
+import pathToRegexp from 'path-to-regexp';
 import warning from 'warning';
 /* eslint-enable */
 
@@ -37,28 +37,25 @@ export default class Router {
    * @constructs
    * @param {object} router
    * @param {ReactElement} router.App
-   * @param {object=} router.options
-   * @param {object=} router.options.engine
+   * @param {object} [router.options={}]
+   * @param {object} [router.options.engine=new ReactRouterEngine()]
+   * @param {object} [router.options.engineOptions={}]
    */
   constructor({ App, options = {} }) {
     assert(App, 'You must provide an app to render.');
 
     this.context = new Meteor.EnvironmentVariable();
-    this.engine = new ReactRouterEngine({
+    this.engine = options.engine || new ReactRouterEngine({
       App,
-      options: options.engine
+      options: options.engineOptions
     });
     this.Logger = options.Logger || null;
     this.middlewares = [];
     this.options = options;
-    this.routes = {
-      exact: [],
-      pattern: []
-    };
+    this.routes = [];
 
     // jsPerf
-    this.routes.exact.jsperfFind = jsperfFind;
-    this.routes.pattern.jsperfFind = jsperfFind;
+    this.routes.jsperfFind = jsperfFind;
   }
 
   /* eslint-disable no-param-reassign */
@@ -108,19 +105,27 @@ export default class Router {
   _applyRoutes(context) {
     const { next, req, res } = context;
     const { originalUrl } = req;
-    const {
-      routes: {
-        exact,
-        pattern
+    const { routes } = this;
+
+    const params = {};
+
+    let values;
+    const find = (route) => {
+      values = route.regex.exec(originalUrl);
+
+      if (!values || (route.exact && !(values[ 0 ] === originalUrl))) {
+        return false;
       }
-    } = this;
+      return true;
+    };
 
-    let params;
-    const find = route => !!(params = route.pattern.match(originalUrl));
-
-    const currentRoute = exact.jsperfFind(find) || pattern.jsperfFind(find);
+    const currentRoute = routes.jsperfFind(find);
 
     if (currentRoute) {
+      currentRoute.keys.jsperfForEach((key, i) => {
+        params[ key.name ] = values[ i + 1 ];
+      });
+
       this._info(
         'info_route_found',
         currentRoute.path,
@@ -175,34 +180,18 @@ export default class Router {
    * @param {function} next
    * @param {object} result
    */
-  _dispatch(req, res, next, result) {
+  _dispatch(req, res, next, { err, head, html, status, url }) {
     const subData = this.getContext().getData();
 
-    let head = '';
     let body = '';
-    let keys;
 
-    if (result.head) {
-      keys = Object.keys(result.head);
-      // jsperf
-      keys.jsperfForEach = jsperfForEach;
-
-      keys.jsperfForEach((i) => {
-        head += result.head[ i ].toString();
-      });
-    }
-
-    if (result.html) {
-      body += result.html;
-    }
-
-    if (result.prefetch) {
-      body += `<script>${result.prefetch}</script>`;
+    if (html) {
+      body += html;
     }
 
     body += `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
 
-    res.statusCode = result.status;
+    res.statusCode = status;
     switch (res.statusCode) {
       case 200:
         req.dynamicHead = head;
@@ -211,7 +200,7 @@ export default class Router {
         break;
 
       case 302:
-        res.redirect(302, result.url);
+        res.redirect(302, url);
         break;
 
       case 404:
@@ -222,22 +211,22 @@ export default class Router {
         break;
 
       case 500:
-        res.statusMessage = `Unexpected error: ${result.message}`;
-        res.end(result.err.toString());
+        res.statusMessage = `Unexpected error: ${err.message}`;
+        res.end(err.toString());
         break;
 
       default:
     }
 
-    const error = (result.err) ? result.err.message : '';
-    const type = (result.status === 500) ? 'error' : 'info';
-    this._log(type, `${type}_response_sended`, result.status, error);
+    const error = (err) ? err.message : '';
+    const type = (status === 500) ? 'error' : 'info';
+    this._log(type, `${type}_response_sended`, status, error);
     this._verbose('verbose_response_sended', head, body);
     this._debug(
-      `debug_response_sended${(result.err) ? '_error' : ''}`,
+      `debug_response_sended${(err) ? '_error' : ''}`,
       req.originalUrl,
-      result.status,
-      result.err
+      status,
+      err
     );
   }
   /* eslint-enable */
@@ -415,6 +404,8 @@ export default class Router {
    * @param {function} callback
    */
   middleware(callback) {
+    assert(callback, 'You must provide a middleware');
+
     this.middlewares.push(callback);
   }
 
@@ -425,27 +416,33 @@ export default class Router {
    * @method route
    * @instance
    * @param {object} routeConfig
+   * @param {boolean} [routeConfig.exact=false]
    * @param {string} routeConfig.path
-   * @param {boolean=} routeConfig.exact
-   * @param {function} callback - callback(params, req, res, next)
+   * @param {boolean} [routeConfig.strict=false]
+   * @param {function} callback
    */
   route({
     exact = false,
-    path
+    path,
+    strict = false
   }, callback) {
-    const pattern = new UrlPattern(path);
+    assert(path, 'You must provide a route path.');
+    assert(callback, 'You must provide a route middleware.');
+
+    const keys = [];
+    // jsperf
+    keys.jsperfForEach = jsperfForEach;
+
+    const regex = pathToRegexp(path, keys, { end: exact, strict });
 
     const route = {
       callback,
+      keys,
       path,
-      pattern
+      regex
     };
 
     warning(isAppUrl(path), `Router: ${path} is not an app url`);
-    if (exact) {
-      this.routes.exact.push(route);
-    } else {
-      this.routes.pattern.push(route);
-    }
+    this.routes.push(route);
   }
 }

@@ -27,7 +27,7 @@ const MainApp = () => (
 );
 
 const ssr = LearnSSR(MainApp, {}, {
-  engine: { withIds: true },
+  engineOptions: { withIds: true },
   Logger: new Logger()
 });
 
