@@ -1,5 +1,6 @@
 import assert from 'assert';
 import Fiber from 'fibers';
+import * as nodeUrl from 'url';
 /* eslint-disable import/no-unresolved */
 import pathToRegexp from 'path-to-regexp';
 import warning from 'warning';
@@ -104,16 +105,16 @@ export default class Router {
    */
   _applyRoutes(context) {
     const { next, req, res } = context;
-    const { originalUrl } = req;
+    const pathname = nodeUrl.parse(req.originalUrl).pathname;
     const { routes } = this;
 
     const params = {};
 
     let values;
     const find = (route) => {
-      values = route.regex.exec(originalUrl);
+      values = route.regex.exec(pathname);
 
-      if (!values || (route.exact && !(values[ 0 ] === originalUrl))) {
+      if (!values || (route.exact && !(values[ 0 ] === pathname))) {
         return false;
       }
       return true;

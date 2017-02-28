@@ -1,4 +1,4 @@
-import Provider from 'react-redux';
+import { Provider } from 'react-redux';
 import React from 'react';
 import ReactDom from 'react-dom';
 import { createStore } from 'redux';
@@ -15,7 +15,7 @@ export const reduxCreateStoreMiddleware = (
       if (window.__PRELOADED_STATE__) {
         return decodeData(window.__PRELOADED_STATE__);
       }
-      return null;
+      return undefined;
     }
   }
 ) =>

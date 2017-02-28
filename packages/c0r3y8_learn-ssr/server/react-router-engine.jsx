@@ -71,19 +71,17 @@ export default class ReactRouterEngine {
       renderToStaticMarkup,
       renderToString
     } = ReactDOMServer;
-    const {
-      App,
-      options: { withIds }
-    } = this;
+    const { options: { withIds } } = this;
     const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
     const context = {};
 
     let result;
     try {
       result = this.options.renderToString({
-        App,
+        App: this.App,
         middlewareContext,
-        renderMethod,
+        renderMethod: Main =>
+          `<div id="render-target">${renderMethod(Main)}</div>`,
         routerContext: context
       });
 
@@ -95,7 +93,7 @@ export default class ReactRouterEngine {
       }
       return {
         head: result.head,
-        html: `<div id="render-target">${result.html}</div>`,
+        html: result.html,
         status: (context.notFound) ? 404 : 200
       };
     } catch (err) {

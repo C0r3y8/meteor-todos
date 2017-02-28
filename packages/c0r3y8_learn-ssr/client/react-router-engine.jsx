@@ -28,9 +28,9 @@ export default class ReactRouterEngine {
 
     this.App = App;
     this.options = {
-      renderToString: options.renderToString || this._renderToString,
-      Router: options.Router || BrowserRouter,
-      routerOptions: options.routerOptions || {},
+      renderToString: this._renderToString,
+      Router: BrowserRouter,
+      routerOptions: {},
       ...options
     };
   }

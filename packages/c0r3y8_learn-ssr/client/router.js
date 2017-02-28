@@ -69,12 +69,9 @@ export default class Router {
     const { middlewares } = this;
     const context = {};
 
-    middlewares.jsperfForEach((middleware) => {
-      const res = middleware();
 
-      if (res) {
-        Object.assign(context, res);
-      }
+    middlewares.jsperfForEach((middleware) => {
+      middleware.call(context);
     });
 
     return context;
