@@ -78,6 +78,7 @@ export default class MockedSession {
    * @param {string} collectionName
    * @param {string} id
    * @param {object} fields
+   * @throws {Error}
    */
   /* eslint-enable max-len */
   changed(subscriptionHandle, collectionName, id, fields) {
@@ -119,6 +120,7 @@ export default class MockedSession {
    * @param {function} subscriptionHandle
    * @param {string} collectionName
    * @param {string} id
+   * @throws {Error}
    */
   /* eslint-enable max-len */
   removed(subscriptionHandle, collectionName, id) {
@@ -142,6 +144,7 @@ export default class MockedSession {
    * @method sendReady
    * @instance
    * @param {array} subscriptionIds
+   * @throws {Error}
    */
   /* eslint-enable max-len */
   sendReady(subscriptionIds) {

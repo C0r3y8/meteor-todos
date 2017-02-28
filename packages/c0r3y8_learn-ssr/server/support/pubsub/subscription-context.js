@@ -51,6 +51,7 @@ export default class SubscriptionContext {
    * @instance
    * @param {string} name
    * @param {object} params
+   * @return {object}
    */
   completeSubscriptions(name, params) {
     const { _subscriptions } = this;
@@ -170,6 +171,7 @@ export default class SubscriptionContext {
    * @memberof SubscriptionContext
    * @method getData
    * @instance
+   * @return {object}
    */
   getData() {
     return {
@@ -186,6 +188,7 @@ export default class SubscriptionContext {
    * @instance
    * @param {string} subName
    * @param {...*} params
+   * @return {object}
    */
   subscribe(subName, ...params) {
     const publishHandler = Meteor.default_server.publish_handlers[ subName ];

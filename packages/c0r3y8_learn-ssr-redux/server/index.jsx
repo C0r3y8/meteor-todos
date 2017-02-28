@@ -6,9 +6,9 @@ import { createStore } from 'redux';
 import { encodeData } from 'meteor/c0r3y8:learn-ssr';
 
 /* eslint-disable import/prefer-default-export */
-export const reduxCreateStoreMiddleware = (...args) =>
+export const reduxCreateStoreMiddleware = (reducer, preloadedState, enhancer) =>
   function createStoreMiddleware() {
-    this.store = createStore(...args);
+    this.store = createStore(reducer, preloadedState, enhancer);
     this.next();
   };
 

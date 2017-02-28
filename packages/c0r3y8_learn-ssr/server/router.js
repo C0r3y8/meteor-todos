@@ -179,6 +179,11 @@ export default class Router {
    * @param {http.ServerResponse} res
    * @param {function} next
    * @param {object} result
+   * @param {Error=} result.err
+   * @param {string=} result.head
+   * @param {string=} result.html
+   * @param {number} result.status
+   * @param {string=} result.url
    */
   _dispatch(req, res, next, { err, head, html, status, url }) {
     const subData = this.getContext().getData();
@@ -390,6 +395,7 @@ export default class Router {
    * @memberof Router
    * @method getContext
    * @instance
+   * @return {RouterContext}
    */
   getContext() {
     return this.context.get();
@@ -403,10 +409,14 @@ export default class Router {
    * @instance
    * @param {function} callback
    */
-  middleware(callback) {
-    assert(callback, 'You must provide a middleware');
+  middleware(middlewares) {
+    assert(middlewares, 'You must provide a middleware');
 
-    this.middlewares.push(callback);
+    if (Array.isArray(middlewares)) {
+      this.middlewares.push(...middlewares);
+    } else {
+      this.middlewares.push(middlewares);
+    }
   }
 
   /**

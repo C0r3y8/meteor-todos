@@ -8,14 +8,19 @@ import defaultCodes from './codes';
 
 /** @class */
 class Logger {
+  /* eslint-disable max-len */
   /**
    * @constructor
    * @param {object} options
-   * @param {object} options.codes
-   * @param {object=} options.config
-   * @param {object=} options.handlers
+   * @param {object} [options.codes=defaultCodes]
+   * @param {object} [options.config={}]
+   * @param {string} [options.config.level='info']
+   * @param {array} [options.config.transports=[ new (winston.transports.Console)() ]]
    * @param {object} [options.CustomLogger=winston.Logger]
+   * @param {object} [options.handlers={}]
+   * @param {string} [options.level='info']
    */
+  /* eslint-enable */
   constructor({ codes = defaultCodes, config = {
     level: 'info',
     transports: [ new (winston.transports.Console)() ]

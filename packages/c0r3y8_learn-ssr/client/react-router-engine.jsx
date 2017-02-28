@@ -8,11 +8,8 @@ import assert from 'assert';
 import React from 'react';
 import ReactDom from 'react-dom';
 /* eslint-disable import/no-unresolved */
-import Provider from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 /* eslint-enable */
-
-import { decodeData } from '../shared/utils/tools';
 
 /** @class */
 export default class ReactRouterEngine {
@@ -20,8 +17,10 @@ export default class ReactRouterEngine {
    * @constructs
    * @param {object} engine
    * @param {ReactElement} engine.App
-   * @param {object=} engine.options
-   * @param {function=} engine.options.createReduxStore
+   * @param {object} [engine.options={}]
+   * @param {function} [engine.options.renderToString=this._renderToString]
+   * @param {ReactElement} [engine.options.Router=BrowserRouter]
+   * @param {object} [engine.options.routerOptions={}]
    */
    /* eslint-disable no-underscore-dangle */
   constructor({ App, options = {} }) {
@@ -29,7 +28,7 @@ export default class ReactRouterEngine {
 
     this.App = App;
     this.options = {
-      parsePreloadedState: () => decodeData(window.__PRELOADED_STATE__),
+      renderToString: options.renderToString || this._renderToString,
       Router: options.Router || BrowserRouter,
       routerOptions: options.routerOptions || {},
       ...options
@@ -38,24 +37,24 @@ export default class ReactRouterEngine {
   /* eslint-enable */
 
   /**
-   * @summary Create redux store if `options.createReduxStore` is specified
-   * @locus Anywhere
+   * @locus Client
    * @memberof ReactRouterEngine
-   * @method createReduxStore
+   * @method _renderToString
    * @instance
+   * @param {object} config
+   * @param {ReactElement} config.App
+   * @param {object} config.middlewareContext
+   * @param {ReactElement} config.Router
+   * @param {routerOptions} config.routerOptions
    */
-  createReduxStore() {
-    const {
-      options: {
-       createReduxStore,
-       parsePreloadedState
-      }
-    } = this;
+  _renderToString({ App, Router, routerOptions }) {
+    const router = (
+      <Router {...routerOptions}>
+        <App />
+      </Router>
+    );
 
-    if (createReduxStore) {
-      return createReduxStore(parsePreloadedState());
-    }
-    return null;
+    ReactDom.render(router, document.getElementById('render-target'));
   }
 
   /**
@@ -64,27 +63,18 @@ export default class ReactRouterEngine {
    * @memberof ReactRouterEngine
    * @method render
    * @instance
-   * @param {object=} store
+   * @param {object} middlewareContext
    */
-  render(store = null) {
+  render(middlewareContext) {
     const {
       App,
       options: {
+        renderToString,
         Router,
         routerOptions
       }
     } = this;
 
-    const router = (
-      <Router {...routerOptions}>
-        <App />
-      </Router>
-    );
-
-    ReactDom.render((store) ?
-      <Provider store={store}>
-        {router}
-      </Provider>
-    : router, document.getElementById('render-target'));
+    renderToString({ App, middlewareContext, Router, routerOptions });
   }
 }

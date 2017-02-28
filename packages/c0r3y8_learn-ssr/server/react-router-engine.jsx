@@ -33,12 +33,38 @@ export default class ReactRouterEngine {
   }
 
   /**
+   * @locus Server
+   * @memberof ReactRouterEngine
+   * @method _renderToString
+   * @instance
+   * @param {object} config
+   * @param {ReactElement} config.App
+   * @param {object} config.middlewareContext
+   * @param {function} config.renderMethod
+   * @param {object} config.routerContext
+   * @return {object}
+   */
+  _renderToString({ App, middlewareContext, renderMethod, routerContext }) {
+    const { req } = middlewareContext;
+    const router = (
+      <StaticRouter location={req.url} context={routerContext}>
+        <App />
+      </StaticRouter>
+    );
+
+    return {
+      html: renderMethod(router)
+    };
+  }
+
+  /**
    * @summary Render react app
    * @locus Server
    * @memberof ReactRouterEngine
    * @method render
    * @instance
    * @param {object} middlewareContext
+   * @return {object}
    */
   render(middlewareContext) {
     const {
@@ -78,26 +104,5 @@ export default class ReactRouterEngine {
         status: 500
       };
     }
-  }
-
-  /**
-   * @locus Server
-   * @memberof ReactRouterEngine
-   * @method _renderToString
-   * @instance
-   * @param {object} middlewareContext
-   * @param {function} renderMethod
-   */
-  _renderToString({ App, middlewareContext, renderMethod, routerContext }) {
-    const { req } = middlewareContext;
-    const router = (
-      <StaticRouter location={req.url} context={routerContext}>
-        <App />
-      </StaticRouter>
-    );
-
-    return {
-      html: renderMethod(router)
-    };
   }
 }

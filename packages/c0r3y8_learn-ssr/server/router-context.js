@@ -24,7 +24,8 @@ export default class RouterContext {
    * @method addSubscription
    * @instance
    * @param {string} name
-   * @param {object} params
+   * @param {...*} params
+   * @throws {Error}
    */
   addSubscription(name, ...params) {
     const { context } = this;
@@ -43,6 +44,7 @@ export default class RouterContext {
    * @memberof RouterContext
    * @method getData
    * @instance
+   * @return {object}
    */
   getData() {
     const contextData = this.context.getData();
