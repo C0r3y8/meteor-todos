@@ -13,10 +13,7 @@ import webdriver from 'selenium-webdriver';
 
 import { HTTP } from 'meteor/http';
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
-import {
-  reduxCreateStoreMiddleware,
-  reduxEngineRender
-} from 'meteor/c0r3y8:learn-ssr-redux';
+import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
 import { Meteor } from 'meteor/meteor';
 import { chai, expect } from 'meteor/practicalmeteor:chai';
 import { sinon } from 'meteor/practicalmeteor:sinon';
@@ -109,7 +106,6 @@ const MainApp = () => (
 
 const app = new LearnSSR(MainApp, {}, {
   engineOptions: {
-    renderToString: reduxEngineRender(),
     withIds: true
   }
 });
@@ -128,7 +124,9 @@ const welcomeReducer = (state = { name: '' }, action) => {
   }
 };
 
-app.middleware(reduxCreateStoreMiddleware(welcomeReducer));
+app.module(ReduxModule, {
+  config: { reducer: welcomeReducer }
+});
 
 /* eslint-disable func-names, no-unused-vars */
 app.route({

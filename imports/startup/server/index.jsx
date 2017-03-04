@@ -8,10 +8,7 @@ import { combineReducers } from 'redux';
 
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 import { Logger } from 'meteor/c0r3y8:learn-ssr-logger';
-import {
-  reduxCreateStoreMiddleware,
-  reduxEngineRender
-} from 'meteor/c0r3y8:learn-ssr-redux';
+import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
 
 import AppContainer from '../../ui/containers/app-container';
 import NotFound from '../../ui/pages/not-found';
@@ -38,17 +35,18 @@ const MainApp = () => (
 
 const ssr = LearnSSR(MainApp, {}, {
   engineOptions: {
-    renderToString: reduxEngineRender(),
     withIds: true
   },
   Logger: new Logger()
 });
 
-ssr.middleware(reduxCreateStoreMiddleware(
-  combineReducers({
-    reduxPage: reduxPageReducer
-  })
-));
+ssr.module(ReduxModule, {
+  config: {
+    reducer: combineReducers({
+      reduxPage: reduxPageReducer
+    })
+  }
+});
 
 /* eslint-disable no-unused-vars, prefer-arrow-callback */
 ssr.route({

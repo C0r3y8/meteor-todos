@@ -1,25 +1,23 @@
 import assert from 'assert';
 import Fiber from 'fibers';
 import * as nodeUrl from 'url';
-/* eslint-disable import/no-unresolved */
-import pathToRegexp from 'path-to-regexp';
 import warning from 'warning';
-/* eslint-enable */
 
 import { Meteor } from 'meteor/meteor';
 
 import ReactRouterEngine from './react-router-engine';
+import Route from './route';
 import RouterContext from './router-context';
 import Subscription from './support/pubsub/subscription';
 /* eslint-disable max-len */
 import SubscriptionContext from './support/pubsub/subscription-context';
 /* eslint-enable */
 import { encodeData } from '../shared/utils/tools';
+import { isAppUrl } from '../shared/utils/urls';
 import {
   jsperfFind,
   jsperfForEach
 } from '../shared/utils/jsperf';
-import { isAppUrl } from '../shared/utils/urls';
 
 const runInFiber = (fn) => {
   if (Fiber.current) {
@@ -39,6 +37,9 @@ export default class Router {
    * @param {object} router
    * @param {ReactElement} router.App
    * @param {object} [router.options={}]
+   * @param {object=} router.options.extras
+   * @param {array} [router.options.extras.body=[]]
+   * @param {array} [router.options.extras.headers=[]]
    * @param {object} [router.options.engine=new ReactRouterEngine()]
    * @param {object} [router.options.engineOptions={}]
    */
@@ -50,12 +51,32 @@ export default class Router {
       App,
       options: options.engineOptions
     });
+    this.extras = {
+      body: [
+        () => {
+          const subData = this.getContext().getData();
+          return `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
+        }
+      ],
+      headers: []
+    };
+    if (options.extras) {
+      if (options.extras.body && Array.isArray(options.extras.body)) {
+        this.extras.body.push(...options.extras.body);
+      }
+      if (options.extras.headers && Array.isArray(options.extras.headers)) {
+        this.extras.headers.push(options.extras.headers);
+      }
+    }
     this.Logger = options.Logger || null;
     this.middlewares = [];
+    this.modules = [];
     this.options = options;
     this.routes = [];
 
     // jsPerf
+    this.extras.body.jsperfForEach = jsperfForEach;
+    this.extras.headers.jsperfForEach = jsperfForEach;
     this.routes.jsperfFind = jsperfFind;
   }
 
@@ -63,11 +84,12 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
-   * @method _applyMiddlewares
+   * @method _applyMiddleware
    * @instance
    * @param {object} context
+   * @param {number} [index=0]
    */
-  _applyMiddlewares(context, index = 0) {
+  _applyMiddleware(context, index = 0) {
     const { req, res } = context;
     const originalNext = context.next;
     const middleware = this.middlewares[ index ];
@@ -79,7 +101,7 @@ export default class Router {
         try {
           context.next = () => {
             context.next = originalNext;
-            this._applyMiddlewares(context, index + 1);
+            this._applyMiddleware(context, index + 1);
           };
           middleware.call(context, req, res, context.next);
         } catch (err) {
@@ -99,61 +121,42 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
-   * @method _applyRoutes
+   * @method _applyRoute
    * @instance
    * @param {object} context
+   * @param {object} route
+   * @param {Route} route.current
+   * @param {object} route.params
+   * @param {number} [index=0]
    */
-  _applyRoutes(context) {
-    const { next, req, res } = context;
-    const pathname = nodeUrl.parse(req.originalUrl).pathname;
-    const { routes } = this;
+  _applyRoute(context, route, index = 0) {
+    const { req, res } = context;
+    const callback = route.current.getCallback(index);
+    const originalNext = context.next;
 
-    const params = {};
-
-    let values;
-    const find = (route) => {
-      values = route.regex.exec(pathname);
-
-      if (!values || (route.exact && !(values[ 0 ] === pathname))) {
-        return false;
-      }
-      return true;
-    };
-
-    const currentRoute = routes.jsperfFind(find);
-
-    if (currentRoute) {
-      currentRoute.keys.jsperfForEach((key, i) => {
-        params[ key.name ] = values[ i + 1 ];
-      });
-
-      this._info(
-        'info_route_found',
-        currentRoute.path,
-        params
-      );
-
+    if (callback) {
       runInFiber(
         () => {
           try {
-            context.params = params;
-            currentRoute.callback.call(context, req, res, next);
+            context.next = () => {
+              context.next = originalNext;
+              this._applyRoute(context, route, index + 1);
+            };
+            callback.call(context, req, res, context.next);
           } catch (err) {
             this._debug(
               'debug_route_callback_error',
-              currentRoute.path,
-              params,
+              route.current.getPath(),
+              route.params,
               err
             );
 
-            next(err);
+            originalNext(err);
           }
         }
       );
     } else {
-      this._verbose('verbose_route_not_found', req.originalUrl);
-
-      next();
+      originalNext();
     }
   }
   /* eslint-enable */
@@ -186,16 +189,31 @@ export default class Router {
    * @param {number} result.status
    * @param {string=} result.url
    */
-  _dispatch(req, res, next, { err, head, html, status, url }) {
-    const subData = this.getContext().getData();
+  _dispatch(middlewareContext, result) {
+    const { next, req, res } = middlewareContext;
+    const { err, html, status, url } = result;
+
+    const extraBody = this._generateExtras('body', middlewareContext);
+    const extraHeaders = this._generateExtras('headers', middlewareContext);
 
     let body = '';
+    let head = '';
 
     if (html) {
       body += html;
     }
 
-    body += `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
+    if (result.head) {
+      head += result.head;
+    }
+
+    if (extraBody) {
+      body += extraBody;
+    }
+
+    if (extraHeaders) {
+      head += extraHeaders;
+    }
 
     res.statusCode = status;
     switch (res.statusCode) {
@@ -272,6 +290,72 @@ export default class Router {
    */
   _error(code, ...args) {
     this._log('error', code, ...args);
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _findRoute
+   * @instance
+   * @param {http.IncomingMessage} req
+   * @return {object|null}
+   */
+  _findRoute(req) {
+    const pathname = nodeUrl.parse(req.originalUrl).pathname;
+    const { routes } = this;
+
+    const params = {};
+
+    let values;
+    const find = (route) => {
+      values = route.regex.exec(pathname);
+
+      if (!values || (route.exact && !(values[ 0 ] === pathname))) {
+        return false;
+      }
+      return true;
+    };
+
+    const currentRoute = routes.jsperfFind(find);
+
+    if (currentRoute) {
+      currentRoute.keys.jsperfForEach((key, i) => {
+        params[ key.name ] = values[ i + 1 ];
+      });
+
+      this._info(
+        'info_route_found',
+        currentRoute.path,
+        params
+      );
+
+      return {
+        current: currentRoute,
+        params
+      };
+    }
+
+    this._verbose('verbose_route_not_found', req.originalUrl);
+
+    return null;
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
+   * @method _generateExtras
+   * @instance
+   * @param {('body'|'headers')} type
+   * @return {string}
+   */
+  _generateExtras(type, middlewareContext) {
+    let extras = '';
+
+    this.extras[ type ].jsperfForEach((generator) => {
+      extras += generator.call(middlewareContext);
+    });
+
+    return extras;
   }
 
   /**
@@ -364,15 +448,23 @@ export default class Router {
 
     const middlewareContext = { out, req, res };
 
+    const route = this._findRoute(req);
+
+    if (route) {
+      middlewareContext.params = route.params;
+    }
+
     const next = (callback = null) =>
       (err) => {
         if (err) {
-          this._dispatch(req, res, out, { err, status: 500 });
+          middlewareContext.next = out;
+          this._dispatch(middlewareContext, { err, status: 500 });
         } else if (callback) {
           middlewareContext.next = next();
-          callback.call(this, middlewareContext);
+          callback.call(this, middlewareContext, route);
         } else if (isAppUrl(originalUrl)) {
-          this._dispatch(req, res, out, engine.render(middlewareContext));
+          middlewareContext.next = out;
+          this._dispatch(middlewareContext, engine.render(middlewareContext));
         } else {
           out();
         }
@@ -382,12 +474,31 @@ export default class Router {
       // support for universal publications
       this._enableUniversalPublish(subContext);
 
-      // need test
-      middlewareContext.next = next(this._applyRoutes);
-      this._applyMiddlewares(middlewareContext);
+      middlewareContext.next = (route) ? next(this._applyRoute) : next();
+      this._applyMiddleware(middlewareContext);
     });
 
     this._profile('Responded in');
+  }
+
+  /**
+   * @summary Adds extra `type`
+   * @locus Server
+   * @memberof Router
+   * @method extra
+   * @instance
+   * @param {('body'|'header')} type
+   * @param {...function} callback
+   */
+  extra(type, ...callback) {
+    assert(type, 'You must provide a type');
+    assert(callback.length !== 0, 'You must provide a callback');
+    assert(
+      (type === 'body' || type === 'header'),
+      '`type` must be equal to \'header\' or \'body\''
+    );
+
+    this.extras[ type ].push(...callback);
   }
 
   /**
@@ -408,16 +519,108 @@ export default class Router {
    * @memberof Router
    * @method middleware
    * @instance
-   * @param {function} callback
+   * @param {...function} callback
    */
-  middleware(middlewares) {
-    assert(middlewares, 'You must provide a middleware');
+  middleware(...callback) {
+    assert(callback.length !== 0, 'You must provide a middleware');
 
-    if (Array.isArray(middlewares)) {
-      this.middlewares.push(...middlewares);
-    } else {
-      this.middlewares.push(middlewares);
+    this.middlewares.push(...callback);
+  }
+
+  /* eslint-disable max-len */
+  /**
+   * @summary Adds module
+   * @locus Server
+   * @memberof Router
+   * @method module
+   * @instance
+   * @param {function|object} Module
+   * @param {object} [options={}]
+   * @param {object=} options.config
+   * @param {boolean} [options.engineOptions=true]
+   * @param {boolean} [options.extras=true]
+   * @param {boolean} [options.middlewares=true]
+   * @param {boolean} [options.routes=true]
+   */
+  /* eslint-enable */
+  module(Module, options = {}) {
+    assert(Module, 'You must provide a module');
+
+    if (typeof Module !== 'function' && typeof Module !== 'object') {
+      warning(false, `Router: ${Module} must be a function or an object`);
+      return;
     }
+
+    const mergedOptions = {
+      engineOptions: true,
+      extras: true,
+      middlewares: true,
+      routes: true,
+      ...options
+    };
+    const instance = (typeof Module === 'function') ?
+      new Module(mergedOptions.config) : Module;
+
+    let extras;
+    let middlewares;
+    let routes;
+
+    if (instance.getEngineOptions && mergedOptions.engineOptions) {
+      this.engine.setOptions(instance.getEngineOptions());
+    }
+
+    if (instance.getExtras && mergedOptions.extras) {
+      extras = instance.getExtras('body');
+
+      if (extras) {
+        if (Array.isArray(extras)) {
+          this.extra('body', ...extras);
+        } else {
+          this.extra('body', extras);
+        }
+      }
+
+      extras = instance.getExtras('headers');
+
+      if (extras) {
+        if (Array.isArray(extras)) {
+          this.extra('headers', ...extras);
+        } else {
+          this.extra('headers', extras);
+        }
+      }
+    }
+
+    if (instance.getMiddlewares && mergedOptions.middlewares) {
+      middlewares = instance.getMiddlewares();
+
+      if (middlewares) {
+        if (Array.isArray(middlewares)) {
+          this.middleware(...middlewares);
+        } else {
+          this.middleware(middlewares);
+        }
+      }
+    }
+
+    if (instance.getRoutes && mergedOptions.routes) {
+      routes = instance.getRoutes();
+
+      if (routes) {
+        if (Array.isArray(routes)) {
+          // jsperf
+          routes.jsperfForEach = jsperfForEach;
+
+          routes.jsperfForEach((route) => {
+            this.route(route.config, ...route.callback);
+          });
+        } else {
+          this.route(routes.config, ...routes.callback);
+        }
+      }
+    }
+
+    this.modules.push(instance);
   }
 
   /**
@@ -430,30 +633,12 @@ export default class Router {
    * @param {boolean} [routeConfig.exact=false]
    * @param {string} routeConfig.path
    * @param {boolean} [routeConfig.strict=false]
-   * @param {function} callback
+   * @param {...function} callback
    */
-  route({
-    exact = false,
-    path,
-    strict = false
-  }, callback) {
-    assert(path, 'You must provide a route path.');
-    assert(callback, 'You must provide a route middleware.');
-
-    const keys = [];
-    // jsperf
-    keys.jsperfForEach = jsperfForEach;
-
-    const regex = pathToRegexp(path, keys, { end: exact, strict });
-
-    const route = {
-      callback,
-      keys,
-      path,
-      regex
-    };
+  route(routeConfig, ...callback) {
+    const { path } = routeConfig;
 
     warning(isAppUrl(path), `Router: ${path} is not an app url`);
-    this.routes.push(route);
+    this.routes.push(new Route(routeConfig, ...callback));
   }
 }

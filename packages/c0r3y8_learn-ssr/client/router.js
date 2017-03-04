@@ -1,4 +1,5 @@
 import assert from 'assert';
+import warning from 'warning';
 
 import { Meteor } from 'meteor/meteor';
 
@@ -37,6 +38,7 @@ export default class Router {
       options: options.engineOptions || {}
     });
     this.middlewares = [];
+    this.modules = [];
     this.options = options;
     this.startup = !(options.startup === false);
 
@@ -95,16 +97,60 @@ export default class Router {
    * @memberof Router
    * @method middleware
    * @instance
-   * @param {function|Array.<function>} middlewares
+   * @param {...function} callback
    */
-  middleware(middlewares) {
-    assert(middlewares, 'You must provide a middleware');
+  middleware(...callback) {
+    assert(callback.length !== 0, 'You must provide a middleware');
 
-    if (Array.isArray()) {
-      this.middlewares.push(...middlewares);
-    } else {
-      this.middlewares.push(middlewares);
+    this.middlewares.push(...callback);
+  }
+  /**
+   * @summary Adds module
+   * @locus Server
+   * @memberof Router
+   * @method module
+   * @instance
+   * @param {function|object} Module
+   * @param {object} [options={}]
+   * @param {object=} options.config
+   * @param {boolean} [options.engineOptions=true]
+   * @param {boolean} [options.middlewares=true]
+   */
+  module(Module, options = {}) {
+    assert(Module, 'You must provide a module');
+
+    if (typeof Module !== 'function' && typeof Module !== 'object') {
+      warning(false, `Router: ${Module} must be a function or an object`);
+      return;
     }
+
+    const mergedOptions = {
+      engineOptions: true,
+      middlewares: true,
+      ...options
+    };
+    const instance = (typeof Module === 'function') ?
+      new Module(mergedOptions.config) : Module;
+
+    let middlewares;
+
+    if (instance.getEngineOptions && mergedOptions.engineOptions) {
+      this.engine.setOptions(instance.getEngineOptions());
+    }
+
+    if (instance.getMiddlewares && mergedOptions.middlewares) {
+      middlewares = instance.getMiddlewares();
+
+      if (middlewares) {
+        if (Array.isArray(middlewares)) {
+          this.middleware(...middlewares);
+        } else {
+          this.middleware(middlewares);
+        }
+      }
+    }
+
+    this.modules.push(instance);
   }
 
   /**

@@ -77,4 +77,19 @@ export default class ReactRouterEngine {
 
     renderToString({ App, middlewareContext, Router, routerOptions });
   }
+
+  /**
+   * @summary Set options
+   * @locus Client
+   * @memberof ReactRouterEngine
+   * @method setOptions
+   * @instance
+   * @param {object} options
+   */
+  setOptions(options) {
+    assert(options, 'You must provide options');
+    assert(typeof options === 'object', 'Param `options` must be an object');
+
+    Object.assign(this.options, options);
+  }
 }

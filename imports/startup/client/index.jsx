@@ -7,10 +7,7 @@ import {
 import { combineReducers } from 'redux';
 
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
-import {
-  reduxCreateStoreMiddleware,
-  reduxEngineRender
-} from 'meteor/c0r3y8:learn-ssr-redux';
+import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
 
 import AppContainer from '../../ui/containers/app-container';
 import NotFound from '../../ui/pages/not-found';
@@ -34,14 +31,12 @@ const MainApp = () => (
   </div>
 );
 
-const app = LearnSSR(MainApp, {
-  engineOptions: {
-    renderToString: reduxEngineRender()
+const app = LearnSSR(MainApp);
+
+app.module(ReduxModule, {
+  config: {
+    reducer: combineReducers({
+      reduxPage: reduxPageReducer
+    })
   }
 });
-
-app.middleware(reduxCreateStoreMiddleware(
-  combineReducers({
-    reduxPage: reduxPageReducer
-  })
-));

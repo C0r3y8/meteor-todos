@@ -103,4 +103,19 @@ export default class ReactRouterEngine {
       };
     }
   }
+
+  /**
+   * @summary Set options
+   * @locus Server
+   * @memberof ReactRouterEngine
+   * @method setOptions
+   * @instance
+   * @param {object} options
+   */
+  setOptions(options) {
+    assert(options, 'You must provide options');
+    assert(typeof options === 'object', 'Param `options` must be an object');
+
+    Object.assign(this.options, options);
+  }
 }
