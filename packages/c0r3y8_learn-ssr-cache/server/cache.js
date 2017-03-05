@@ -1,7 +1,10 @@
 import assert from 'assert';
 import NodeCache from 'node-cache';
 
-import { jsperfFind } from 'meteor/c0r3y8:learn-ssr';
+import {
+  jsperfFind,
+  jsperfForEach
+} from 'meteor/c0r3y8:learn-ssr';
 
 /** @class */
 export default class Cache {
@@ -9,6 +12,7 @@ export default class Cache {
    * @constructor
    * @param {object} [options={}]
    * @param {number} [options.checkperiod=600]
+   * @param {array} [options.collections=[]]
    * @param {boolean} [options.errorOnMissing=false]
    * @param {number} [options.stdTTL=0]
    * @param {boolean} [options.useClones=true]
@@ -18,6 +22,7 @@ export default class Cache {
 
     this.options = {
       checkperiod: 600,
+      collections: [],
       errorOnMissing: false,
       stdTTL: 0,
       useClones: true,
@@ -26,6 +31,7 @@ export default class Cache {
     this.cache = new NodeCache(this.options);
     this.queue = {};
 
+    // node-cache API
     this.close = this.cache.close;
     this.del = this.cache.del;
     this.flushAll = this.cache.flushAll;
@@ -37,6 +43,37 @@ export default class Cache {
     this.on = this.cache.on;
     this.set = this.cache.set;
     this.ttl = this.cache.ttl;
+
+    // jsPerf
+    this.options.collections.jsperfForEach = jsperfForEach;
+
+    this._initCursorsObserver();
+  }
+
+  /**
+   * @locus Server
+   * @memberof Cache
+   * @method _initCursorsObserver
+   * @instance
+   */
+  _initCursorsObserver() {
+    const { collections } = this.options;
+
+    collections.jsperfForEach((collection) => {
+      const { cursor, callback } = collection;
+
+      cursor.observeChanges({
+        added: (id, fields) => {
+          callback.call(this, 'added', id, fields);
+        },
+        changed: (id, fields) => {
+          callback.call(this, 'changed', id, fields);
+        },
+        removed: (id) => {
+          callback.call(this, 'removed', id);
+        }
+      });
+    });
   }
 
   /**

@@ -73,6 +73,7 @@ export class CacheModule {
    * @constructor
    * @param {object} [options={}]
    * @param {number} [options.checkperiod=600]
+   * @param {array} [options.collections=[]]
    * @param {boolean} [options.errorOnMissing=false]
    * @param {number} [options.stdTTL=0]
    * @param {boolean} [options.useClones=true]

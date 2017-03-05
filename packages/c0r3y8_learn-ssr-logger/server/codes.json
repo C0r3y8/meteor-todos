@@ -4,6 +4,7 @@
   "debug_response_sended_error": "%s - Responded with status %d, %j",
   "debug_route_callback_error": "%s - Route with params %j throws error %j",
   "error_response_sended": "Responded with status %d - error %s",
+  "info_cache_del": "Cache del on cursor %s with key %s",
   "info_cache_hit": "Cache hit with key %s",
   "info_received_request": "Received request %s",
   "info_response_sended": "Responded with status %d",

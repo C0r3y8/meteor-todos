@@ -6,7 +6,11 @@ import {
 } from 'react-router-dom';
 import { combineReducers } from 'redux';
 
-import { CacheModule, enableCache } from 'meteor/c0r3y8:learn-ssr-cache';
+import {
+  CacheModule,
+  defaultBuildKey,
+  enableCache
+} from 'meteor/c0r3y8:learn-ssr-cache';
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 import { Logger } from 'meteor/c0r3y8:learn-ssr-logger';
 import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
@@ -16,6 +20,7 @@ import NotFound from '../../ui/pages/not-found';
 import ReduxPage from '../../ui/pages/redux-page';
 import { reduxPageReducer } from '../../reducers/redux-page-reducers';
 import { reduxPageSetName } from '../../actions/redux-page-actions';
+import Tasks from '../../api/tasks';
 
 import './register-api';
 
@@ -41,7 +46,23 @@ const ssr = LearnSSR(MainApp, {}, {
   Logger: new Logger()
 });
 
-ssr.module(CacheModule);
+ssr.module(CacheModule, {
+  config: {
+    collections: [ {
+      callback(type) {
+        const key = defaultBuildKey('GET', '/', {});
+        const entries = this.del(key);
+
+        if (entries > 0) {
+          /* eslint-disable no-underscore-dangle */
+          ssr._info('info_cache_del', type, key);
+          /* eslint-enable */
+        }
+      },
+      cursor: Tasks.find({})
+    } ]
+  }
+});
 
 ssr.module(ReduxModule, {
   config: {
@@ -55,7 +76,7 @@ ssr.module(ReduxModule, {
 ssr.route({
   exact: true,
   path: '/'
-}, (req, res, next) => {
+}, enableCache(), (req, res, next) => {
   next();
 });
 
