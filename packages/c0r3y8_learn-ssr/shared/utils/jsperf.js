@@ -29,7 +29,7 @@ export function jsperfFind(fn) {
   let i;
 
   for (i = 0; i < len; i++) {
-    if (fn(arr[ i ])) {
+    if (fn(arr[ i ], i)) {
       return arr[ i ];
     }
   }

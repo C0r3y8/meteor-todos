@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 import { combineReducers } from 'redux';
 
+import { CacheModule, enableCache } from 'meteor/c0r3y8:learn-ssr-cache';
 import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
 import { Logger } from 'meteor/c0r3y8:learn-ssr-logger';
 import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
@@ -40,6 +41,8 @@ const ssr = LearnSSR(MainApp, {}, {
   Logger: new Logger()
 });
 
+ssr.module(CacheModule);
+
 ssr.module(ReduxModule, {
   config: {
     reducer: combineReducers({
@@ -58,7 +61,7 @@ ssr.route({
 
 ssr.route({
   path: '/redux'
-}, function reduxPageMiddleware(req, res, next) {
+}, enableCache(), function reduxPageMiddleware(req, res, next) {
   if (req.query.name) {
     this.store.dispatch(reduxPageSetName(req.query.name));
   }

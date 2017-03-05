@@ -11,6 +11,8 @@ import ReactDOMServer from 'react-dom/server';
 import { StaticRouter } from 'react-router';
 /* eslint-enable */
 
+import { jsperfForEach } from '../shared/utils/jsperf';
+
 /** @class */
 export default class ReactRouterEngine {
   /**
@@ -25,11 +27,44 @@ export default class ReactRouterEngine {
     assert(App, 'You must provide an app to render.');
 
     this.App = App;
+    this.extras = {
+      body: [],
+      headers: []
+    };
+    if (options.extras) {
+      if (options.extras.body && Array.isArray(options.extras.body)) {
+        this.extras.body.push(...options.extras.body);
+      }
+      if (options.extras.headers && Array.isArray(options.extras.headers)) {
+        this.extras.headers.push(...options.extras.headers);
+      }
+    }
     this.options = {
       renderToString: this._renderToString,
       withIds: false,
       ...options
     };
+
+    // jsPerf
+    this.extras.body.jsperfForEach = jsperfForEach;
+    this.extras.headers.jsperfForEach = jsperfForEach;
+  }
+
+  /**
+   * @locus Server
+   * @memberof ReactRouterEngine
+   * @method _generateExtras
+   * @instance
+   * @param {('body'|'headers')} type
+   * @return {string}
+   */
+  _generateExtras(type, middlewareContext) {
+    let extras = '';
+    this.extras[ type ].jsperfForEach((generator) => {
+      extras += generator.call(middlewareContext);
+    });
+
+    return extras;
   }
 
   /**
@@ -75,7 +110,12 @@ export default class ReactRouterEngine {
     const renderMethod = (withIds) ? renderToString : renderToStaticMarkup;
     const context = {};
 
+    let body = '';
+    let extraBody;
+    let extraHeaders;
+    let head = '';
     let result;
+
     try {
       result = this.options.renderToString({
         App: this.App,
@@ -85,6 +125,25 @@ export default class ReactRouterEngine {
         routerContext: context
       });
 
+      extraBody = this._generateExtras('body', middlewareContext);
+      extraHeaders = this._generateExtras('headers', middlewareContext);
+
+      if (result.html) {
+        body += result.html;
+      }
+
+      if (result.head) {
+        head += result.head;
+      }
+
+      if (extraBody) {
+        body += extraBody;
+      }
+
+      if (extraHeaders) {
+        head += extraHeaders;
+      }
+
       if (context.url) {
         return {
           status: 302,
@@ -92,8 +151,8 @@ export default class ReactRouterEngine {
         };
       }
       return {
-        head: result.head,
-        html: result.html,
+        body,
+        head,
         status: (context.notFound) ? 404 : 200
       };
     } catch (err) {
@@ -117,5 +176,13 @@ export default class ReactRouterEngine {
     assert(typeof options === 'object', 'Param `options` must be an object');
 
     Object.assign(this.options, options);
+    if (options.extras) {
+      if (options.extras.body && Array.isArray(options.extras.body)) {
+        this.extras.body.push(...options.extras.body);
+      }
+      if (options.extras.headers && Array.isArray(options.extras.headers)) {
+        this.extras.headers.push(...options.extras.headers);
+      }
+    }
   }
 }

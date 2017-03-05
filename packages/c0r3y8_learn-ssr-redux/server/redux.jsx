@@ -28,7 +28,7 @@ export function reduxEngineRender({
   return { html: renderMethod(router) };
 }
 
-export const reduxGenerateExtras = (options = {
+export const reduxExtrasBody = (options = {
   stringifyPreloadedState: state =>
     `window.__PRELOADED_STATE__ = '${encodeData(state)}';`,
 }) =>
@@ -38,7 +38,6 @@ export const reduxGenerateExtras = (options = {
 
     return `<script>${stringifyPreloadedState(store.getState())}</script>`;
   };
-
 
 /** @class */
 export class ReduxModule {
@@ -71,26 +70,15 @@ export class ReduxModule {
    */
   getEngineOptions() {
     return {
+      extras: {
+        body: [
+          reduxExtrasBody({
+            stringifyPreloadedState: this.options.stringifyPreloadedState
+          })
+        ]
+      },
       renderToString: reduxEngineRender
     };
-  }
-
-  /**
-   * @summary Returns extras
-   * @locus Server
-   * @memberof ReduxModule
-   * @method getExtras
-   * @instance
-   * @param {('body'|'headers')} type
-   * @return {function|null}
-   */
-  getExtras(type) {
-    if (type === 'body') {
-      return reduxGenerateExtras({
-        stringifyPreloadedState: this.options.stringifyPreloadedState
-      });
-    }
-    return null;
   }
 
   /**

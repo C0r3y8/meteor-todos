@@ -1,8 +1,8 @@
 Package.describe({
-  name: 'c0r3y8:learn-ssr-redux',
+  name: 'c0r3y8:learn-ssr-cache',
   version: '0.0.1',
   // Brief, one-line summary of the package.
-  summary: 'Enable SSR for redux',
+  summary: 'Node cache for Learn SSR',
   // URL to the Git repository containing the source code for this package.
   git: '',
   // By default, Meteor will default to using README.md for documentation.
@@ -11,7 +11,7 @@ Package.describe({
 });
 
 const basePackages = {
-  all: [ 'c0r3y8:learn-ssr', 'ecmascript', 'meteor' ]
+  server: [ 'c0r3y8:learn-ssr', 'ecmascript', 'ejson', 'meteor' ]
 };
 
 const testPackages = [
@@ -32,10 +32,10 @@ Package.onUse(function (api) {
     warning: '3.0.0'
   });
 
-  api.use('tmeasday:check-npm-versions@0.3.1');
-  api.use(basePackages.all);
+  api.use(basePackages.server, 'server');
 
-  api.mainModule('client/index.js', 'client');
+  api.use('tmeasday:check-npm-versions@0.3.1');
+
   api.mainModule('server/index.js', 'server');
 });
 /* eslint-enable */
@@ -49,13 +49,13 @@ Package.onTest(function (api) {
     'selenium-webdriver': '2.53.3',
     warning: '3.0.0'
   });
+  api.use(basePackages.server, 'server');
 
-  api.use(basePackages.all);
   api.use(testPackages);
 
   api.use('c0r3y8:learn-ssr');
-  api.use('c0r3y8:learn-ssr-redux');
+  api.use('c0r3y8:learn-ssr-cache');
 
-  api.addFiles('server/redux-tests.jsx', 'server');
+  api.addFiles('server/cache-tests.js', 'server');
 });
 /* eslint-enable */

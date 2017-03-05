@@ -37,37 +37,33 @@ export default class Router {
    * @param {object} router
    * @param {ReactElement} router.App
    * @param {object} [router.options={}]
-   * @param {object=} router.options.extras
-   * @param {array} [router.options.extras.body=[]]
-   * @param {array} [router.options.extras.headers=[]]
    * @param {object} [router.options.engine=new ReactRouterEngine()]
    * @param {object} [router.options.engineOptions={}]
+   * @param {array} [router.options.engineOptions.extras.body=[]]
+   * @param {array} [router.options.engineOptions.extras.headers=[]]
    */
   constructor({ App, options = {} }) {
     assert(App, 'You must provide an app to render.');
 
+    const engineOptions = options.engineOptions || {};
+
     this.context = new Meteor.EnvironmentVariable();
+    if (engineOptions
+      && engineOptions.extras
+      && engineOptions.extras.body
+      && Array.isArray(engineOptions.extras.body)) {
+      engineOptions.extras.body.push(this._extraSubscription());
+    } else if (engineOptions && engineOptions.extras) {
+      engineOptions.extras.body = [ this._extraSubscription() ];
+    } else {
+      engineOptions.extras = {
+        body: [ this._extraSubscription() ]
+      };
+    }
     this.engine = options.engine || new ReactRouterEngine({
       App,
-      options: options.engineOptions
+      options: engineOptions
     });
-    this.extras = {
-      body: [
-        () => {
-          const subData = this.getContext().getData();
-          return `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
-        }
-      ],
-      headers: []
-    };
-    if (options.extras) {
-      if (options.extras.body && Array.isArray(options.extras.body)) {
-        this.extras.body.push(...options.extras.body);
-      }
-      if (options.extras.headers && Array.isArray(options.extras.headers)) {
-        this.extras.headers.push(options.extras.headers);
-      }
-    }
     this.Logger = options.Logger || null;
     this.middlewares = [];
     this.modules = [];
@@ -75,8 +71,6 @@ export default class Router {
     this.routes = [];
 
     // jsPerf
-    this.extras.body.jsperfForEach = jsperfForEach;
-    this.extras.headers.jsperfForEach = jsperfForEach;
     this.routes.jsperfFind = jsperfFind;
   }
 
@@ -184,37 +178,12 @@ export default class Router {
    * @param {function} next
    * @param {object} result
    * @param {Error=} result.err
+   * @param {string=} result.body
    * @param {string=} result.head
-   * @param {string=} result.html
    * @param {number} result.status
    * @param {string=} result.url
    */
-  _dispatch(middlewareContext, result) {
-    const { next, req, res } = middlewareContext;
-    const { err, html, status, url } = result;
-
-    const extraBody = this._generateExtras('body', middlewareContext);
-    const extraHeaders = this._generateExtras('headers', middlewareContext);
-
-    let body = '';
-    let head = '';
-
-    if (html) {
-      body += html;
-    }
-
-    if (result.head) {
-      head += result.head;
-    }
-
-    if (extraBody) {
-      body += extraBody;
-    }
-
-    if (extraHeaders) {
-      head += extraHeaders;
-    }
-
+  _dispatch(req, res, next, { body, err, head, status, url }) {
     res.statusCode = status;
     switch (res.statusCode) {
       case 200:
@@ -295,6 +264,20 @@ export default class Router {
   /**
    * @locus Server
    * @memberof Router
+   * @method _extraSubscription
+   * @instance
+   * @return {function}
+   */
+  _extraSubscription() {
+    return () => {
+      const subData = this.getContext().getData();
+      return `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
+    };
+  }
+
+  /**
+   * @locus Server
+   * @memberof Router
    * @method _findRoute
    * @instance
    * @param {http.IncomingMessage} req
@@ -338,24 +321,6 @@ export default class Router {
     this._verbose('verbose_route_not_found', req.originalUrl);
 
     return null;
-  }
-
-  /**
-   * @locus Server
-   * @memberof Router
-   * @method _generateExtras
-   * @instance
-   * @param {('body'|'headers')} type
-   * @return {string}
-   */
-  _generateExtras(type, middlewareContext) {
-    let extras = '';
-
-    this.extras[ type ].jsperfForEach((generator) => {
-      extras += generator.call(middlewareContext);
-    });
-
-    return extras;
   }
 
   /**
@@ -446,7 +411,16 @@ export default class Router {
     const subContext = new SubscriptionContext({ headers });
     const context = new RouterContext(subContext);
 
-    const middlewareContext = { out, req, res };
+    const logger = {
+      debug: (code, ...args) => this._debug(code, ...args),
+      error: (code, ...args) => this._error(code, ...args),
+      info: (code, ...args) => this._info(code, ...args),
+      log: (type, code, ...args) => this._log(type, code, ...args),
+      profile: name => this._profile(name),
+      verbose: (code, ...args) => this._verbose(code, ...args),
+      warn: (code, ...args) => this._warn(code, ...args)
+    };
+    const middlewareContext = { logger, out, req, res };
 
     const route = this._findRoute(req);
 
@@ -457,14 +431,12 @@ export default class Router {
     const next = (callback = null) =>
       (err) => {
         if (err) {
-          middlewareContext.next = out;
-          this._dispatch(middlewareContext, { err, status: 500 });
+          this._dispatch(req, res, out, { err, status: 500 });
         } else if (callback) {
           middlewareContext.next = next();
           callback.call(this, middlewareContext, route);
         } else if (isAppUrl(originalUrl)) {
-          middlewareContext.next = out;
-          this._dispatch(middlewareContext, engine.render(middlewareContext));
+          this._dispatch(req, res, out, engine.render(middlewareContext));
         } else {
           out();
         }
@@ -479,26 +451,6 @@ export default class Router {
     });
 
     this._profile('Responded in');
-  }
-
-  /**
-   * @summary Adds extra `type`
-   * @locus Server
-   * @memberof Router
-   * @method extra
-   * @instance
-   * @param {('body'|'header')} type
-   * @param {...function} callback
-   */
-  extra(type, ...callback) {
-    assert(type, 'You must provide a type');
-    assert(callback.length !== 0, 'You must provide a callback');
-    assert(
-      (type === 'body' || type === 'header'),
-      '`type` must be equal to \'header\' or \'body\''
-    );
-
-    this.extras[ type ].push(...callback);
   }
 
   /**
@@ -538,7 +490,6 @@ export default class Router {
    * @param {object} [options={}]
    * @param {object=} options.config
    * @param {boolean} [options.engineOptions=true]
-   * @param {boolean} [options.extras=true]
    * @param {boolean} [options.middlewares=true]
    * @param {boolean} [options.routes=true]
    */
@@ -553,7 +504,6 @@ export default class Router {
 
     const mergedOptions = {
       engineOptions: true,
-      extras: true,
       middlewares: true,
       routes: true,
       ...options
@@ -561,34 +511,11 @@ export default class Router {
     const instance = (typeof Module === 'function') ?
       new Module(mergedOptions.config) : Module;
 
-    let extras;
     let middlewares;
     let routes;
 
     if (instance.getEngineOptions && mergedOptions.engineOptions) {
       this.engine.setOptions(instance.getEngineOptions());
-    }
-
-    if (instance.getExtras && mergedOptions.extras) {
-      extras = instance.getExtras('body');
-
-      if (extras) {
-        if (Array.isArray(extras)) {
-          this.extra('body', ...extras);
-        } else {
-          this.extra('body', extras);
-        }
-      }
-
-      extras = instance.getExtras('headers');
-
-      if (extras) {
-        if (Array.isArray(extras)) {
-          this.extra('headers', ...extras);
-        } else {
-          this.extra('headers', extras);
-        }
-      }
     }
 
     if (instance.getMiddlewares && mergedOptions.middlewares) {
@@ -639,6 +566,6 @@ export default class Router {
     const { path } = routeConfig;
 
     warning(isAppUrl(path), `Router: ${path} is not an app url`);
-    this.routes.push(new Route(routeConfig, ...callback));
+    this.routes.push(new Route(routeConfig, callback));
   }
 }

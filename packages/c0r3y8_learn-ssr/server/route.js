@@ -14,13 +14,13 @@ export default class Route {
    * @param {boolean} config.exact
    * @param {string} config.path
    * @param {boolean} config.strict
-   * @param {...function} callback
+   * @param {array.<function>} callback
    */
   constructor({
     exact,
     path,
     strict
-  }, ...callback) {
+  }, callback) {
     assert(path, 'You must provide a route path.');
     assert(callback.length !== 0, 'You must provide a route middleware.');
 

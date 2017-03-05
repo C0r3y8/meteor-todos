@@ -1,0 +1,16 @@
+{
+  "presets": [
+    "es2015",
+    "es2016",
+    "meteor",
+    "react"
+  ],
+  "plugins": [
+    "transform-decorators-legacy",
+    "transform-class-properties",
+    "transform-react-constant-elements",
+    "transform-react-inline-elements",
+    "transform-inline-environment-variables",
+    "transform-dead-code-elimination"
+  ]
+}
