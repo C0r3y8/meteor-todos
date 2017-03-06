@@ -6,8 +6,8 @@ import {
 } from 'react-router-dom';
 import { combineReducers } from 'redux';
 
-import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
-import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
+import { Octopus } from 'meteor/c0r3y8:octopus';
+import { ReduxModule } from 'meteor/c0r3y8:octopus-redux';
 
 import AppContainer from '../../ui/containers/app-container';
 import NotFound from '../../ui/pages/not-found';
@@ -31,7 +31,7 @@ const MainApp = () => (
   </div>
 );
 
-const app = LearnSSR(MainApp);
+const app = Octopus(MainApp);
 
 app.module(ReduxModule, {
   config: {

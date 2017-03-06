@@ -8,10 +8,10 @@ blaze-html-templates@1.0.4 # Compile .html files into Meteor Blaze views
 
 # meteor libraries
 check@1.2.4
-ecmascript@0.6.1
+ecmascript@0.6.3
 es5-shim@4.6.15
 meteor-base@1.0.4
-tracker@1.1.1
+tracker@1.1.2
 
 # standard libraries
 jquery@1.11.10
@@ -20,25 +20,25 @@ jquery@1.11.10
 ddp@1.2.5
 ejson@1.0.13
 hot-code-push@1.0.4
-mongo@1.1.14
+mongo@1.1.15
 react-meteor-data
 
 # accounts
-accounts-password@1.3.3
+accounts-password@1.3.4
 accounts-ui@1.1.9
 
 # production
-standard-minifier-css@1.3.2
-standard-minifier-js@1.2.1
+standard-minifier-css@1.3.3
+standard-minifier-js@1.2.2
 
 #ui
 reactive-var@1.0.11
 
 # testing
-shell-server@0.2.1
+shell-server@0.2.2
 
 # ssr
-c0r3y8:learn-ssr
-c0r3y8:learn-ssr-cache
-c0r3y8:learn-ssr-logger
-c0r3y8:learn-ssr-redux
+c0r3y8:octopus
+c0r3y8:octopus-cache
+c0r3y8:octopus-logger
+c0r3y8:octopus-redux

@@ -10,10 +10,10 @@ import {
   CacheModule,
   defaultBuildKey,
   enableCache
-} from 'meteor/c0r3y8:learn-ssr-cache';
-import { LearnSSR } from 'meteor/c0r3y8:learn-ssr';
-import { Logger } from 'meteor/c0r3y8:learn-ssr-logger';
-import { ReduxModule } from 'meteor/c0r3y8:learn-ssr-redux';
+} from 'meteor/c0r3y8:octopus-cache';
+import { Logger } from 'meteor/c0r3y8:octopus-logger';
+import { Octopus } from 'meteor/c0r3y8:octopus';
+import { ReduxModule } from 'meteor/c0r3y8:octopus-redux';
 
 import AppContainer from '../../ui/containers/app-container';
 import NotFound from '../../ui/pages/not-found';
@@ -39,7 +39,7 @@ const MainApp = () => (
   </div>
 );
 
-const ssr = LearnSSR(MainApp, {}, {
+const ssr = Octopus(MainApp, {}, {
   engineOptions: {
     withIds: true
   },
