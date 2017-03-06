@@ -6,7 +6,35 @@ import Task from '../components/task';
 import AccountsUIWrapper from '../wrappers/accounts-ui-wrapper';
 
 export default class App extends Component {
-  static defaultProps = { currentUser: null };
+  static defaultProps = {
+    currentUser: null
+  //   incompleteCount: 4,
+  //   tasks: [ {
+  //     _id: 'oNAjMo6HERj2Pq4Xp',
+  //     owner: 'evJGpiLeuTq9WdmdZ',
+  //     text: 'Foo',
+  //     username: 'Steph',
+  //     private: false
+  //   }, {
+  //     _id: 'npsyBEP2B8K4rkjJf',
+  //     owner: 'evJGpiLeuTq9WdmdZ',
+  //     text: 'Bar',
+  //     username: 'Steph',
+  //     private: false
+  //   }, {
+  //     _id: 'AGrN5vhFYh6rDZCBJ',
+  //     owner: 'evJGpiLeuTq9WdmdZ',
+  //     text: 'John',
+  //     username: 'Steph',
+  //     private: false
+  //   }, {
+  //     _id: '6JyePRH7MvnQHvAhg',
+  //     owner: 'evJGpiLeuTq9WdmdZ',
+  //     text: 'Doe',
+  //     username: 'Steph',
+  //     private: false
+  //   } ]
+  };
 
   static propTypes = {
     currentUser: PropTypes.object,
