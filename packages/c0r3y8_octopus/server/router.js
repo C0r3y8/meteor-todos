@@ -261,6 +261,7 @@ export default class Router {
     this._log('error', code, ...args);
   }
 
+  /* eslint-disable no-underscore-dangle */
   /**
    * @locus Server
    * @memberof Router
@@ -269,11 +270,24 @@ export default class Router {
    * @return {function}
    */
   _extraSubscription() {
-    return () => {
-      const subData = this.getContext().getData();
+    const self = this;
+
+    return function extraSubscriptionBody() {
+      const { res } = this;
+      const subData = self.getContext().getData();
+
+      if (res._headers && res._headers[ 'access-control-allow-origin' ]) {
+        warning(
+          false,
+          `Server subscriptions turned off due to CORS headers.
+          read more: http://goo.gl/eGwb4e`
+        );
+        return '';
+      }
       return `<script>${stringifyPreloadedSubscriptions(subData)}</script>`;
     };
   }
+  /* eslint-enable */
 
   /**
    * @locus Server
