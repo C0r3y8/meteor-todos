@@ -30,3 +30,6 @@ packages/npm-container/.npm/package/node_modules/
 
 ## JSDoc files ##
 jsdoc.json
+
+## Local packages ##
+packages/
