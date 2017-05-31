@@ -30,11 +30,13 @@ app.module(CacheModule, {
 /* eslint-disable no-unused-vars, prefer-arrow-callback */
 app.route({
   exact: true,
-  path: '/'
-}, enableCache());
+  key: 'root'
+}, enableCache(), (req, res, next) => {
+  next();
+});
 
 app.route({
-  path: '/redux'
+  key: 'redux'
 }, enableCache(), function reduxPageMiddleware(req, res, next) {
   if (req.query.name) {
     this.store.dispatch(reduxPageSetName(req.query.name));

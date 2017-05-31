@@ -14,17 +14,21 @@ import AppContainer from '../../ui/containers/app-container';
 import NotFound from '../../ui/pages/not-found';
 import ReduxPage from '../../ui/pages/redux-page';
 import { reduxPageReducer } from '../../reducers/redux-page-reducers';
+import { routes } from './routes';
+
+const reduxPath = routes.get('redux');
+const rootPath = routes.get('root');
 
 const MainApp = () => (
   <div>
     <ul>
-      <li><Link to="/">{'Home'}</Link></li>
-      <li><Link to="/redux">{'Redux'}</Link></li>
+      <li><Link to={rootPath}>{'Home'}</Link></li>
+      <li><Link to={reduxPath}>{'Redux'}</Link></li>
     </ul>
 
     <Switch>
-      <Route exact path="/" component={AppContainer} />
-      <Route path="/redux" component={ReduxPage} />
+      <Route exact path={rootPath} component={AppContainer} />
+      <Route path={reduxPath} component={ReduxPage} />
       <Route component={NotFound} />
     </Switch>
   </div>
@@ -36,7 +40,8 @@ if (Meteor.isServer) {
     engineOptions: {
       withIds: true
     },
-    Logger: new Logger()
+    Logger: new Logger(),
+    routesHelper: routes
   };
 }
 

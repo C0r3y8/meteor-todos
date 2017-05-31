@@ -9,9 +9,21 @@ import App from '../layouts/app';
 export default createContainer(() => {
   Meteor.subscribe('tasks');
 
+  const selector = { private: { $ne: true } };
+  const sort = { sort: { createdAt: -1 } };
+
+  const incompleteCount = (Meteor.isServer) ?
+    Tasks.find({
+      checked: { $ne: true },
+      ...selector
+    }, sort).count() : Tasks.find({ checked: { $ne: true } }).count();
+
+  const tasks = (Meteor.isServer) ?
+    Tasks.find(selector, sort).fetch() : Tasks.find({}, sort).fetch();
+
   return {
     currentUser: Meteor.user(),
-    incompleteCount: Tasks.find({ checked: { $ne: true } }).count(),
-    tasks: Tasks.find({}, { sort: { createdAt: -1 } }).fetch()
+    incompleteCount,
+    tasks
   };
 }, App);
